@@ -1,9 +1,8 @@
 import Dependencies._
 import sbt.Keys._
 
-lagomCassandraPort in ThisBuild := 9042
-lagomCassandraCleanOnStart in ThisBuild := true
-lagomKafkaEnabled in ThisBuild := false
+lagomCassandraCleanOnStart in ThisBuild := false
+lagomKafkaEnabled in ThisBuild := true
 
 scalaVersion in ThisBuild := "2.11.8"
 
@@ -14,22 +13,23 @@ lazy val `reactive-roulette` = (project in file("."))
   .settings(commonSettings)
   .settings(name := "reactive-roulette")
 
-
 lazy val `roulette-game-api` = (project in file("roulette-game-api"))
   .settings(commonSettings)
   .settings(
     libraryDependencies ++= Seq(
-      lagomScaladslApi
+      lagomScaladslApi,
+      playJsonDerivedCodecs
     )
   ).dependsOn(`json-extensions`)
 
 lazy val `roulette-game-impl` = (project in file("roulette-game-impl"))
   .settings(commonSettings)
-  .settings(lagomForkedTestSettings: _*)
+  .settings(lagomForkedTestSettings)
   .settings(
     libraryDependencies ++= Seq(
       lagomScaladslPersistenceCassandra,
       lagomScaladslTestKit,
+      lagomScaladslKafkaBroker,
       datastaxCassandraDriverExtras,
       macwire,
       scalaTest
@@ -43,6 +43,7 @@ lazy val `json-extensions` = (project in file("json-extensions"))
   .settings(
     libraryDependencies ++= Seq(
       lagomScaladslApi,
+      playJsonDerivedCodecs,
       scalaTest
     )
   )

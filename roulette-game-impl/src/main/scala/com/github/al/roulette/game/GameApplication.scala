@@ -1,23 +1,33 @@
-package com.github.al.roulette.game.impl
+package com.github.al.roulette.game
 
 import com.github.al.roulette.game.api.GameService
+import com.github.al.roulette.game.impl.{GameEntity, GameSerializerRegistry, GameServiceImpl}
+import com.lightbend.lagom.scaladsl.broker.kafka.LagomKafkaComponents
 import com.lightbend.lagom.scaladsl.devmode.LagomDevModeComponents
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraPersistenceComponents
 import com.lightbend.lagom.scaladsl.server._
 import com.softwaremill.macwire.wire
+import com.typesafe.conductr.bundlelib.lagom.scaladsl.ConductRApplicationComponents
 import play.api.libs.ws.ahc.AhcWSComponents
 
-import com.typesafe.conductr.bundlelib.lagom.scaladsl.ConductRApplicationComponents
+import scala.concurrent.ExecutionContext
 
 
-abstract class GameApplication(context: LagomApplicationContext)  extends LagomApplication(context)
-    with AhcWSComponents
-    with CassandraPersistenceComponents {
+trait GameComponents extends LagomServerComponents
+  with CassandraPersistenceComponents {
+
+  implicit def executionContext: ExecutionContext
 
   override lazy val lagomServer: LagomServer = serverFor[GameService](wire[GameServiceImpl])
   override lazy val jsonSerializerRegistry = GameSerializerRegistry
 
+  persistentEntityRegistry.register(wire[GameEntity])
+}
 
+abstract class GameApplication(context: LagomApplicationContext) extends LagomApplication(context)
+  with GameComponents
+  with AhcWSComponents
+  with LagomKafkaComponents {
 }
 
 class GameApplicationLoader extends LagomApplicationLoader {
