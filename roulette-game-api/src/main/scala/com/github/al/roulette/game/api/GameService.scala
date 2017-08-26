@@ -8,6 +8,8 @@ import com.lightbend.lagom.scaladsl.api.transport.Method
 import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
 
 trait GameService extends Service {
+  final val GameEventTopicName = "game-GameEvent"
+
   def createGame: ServiceCall[Game, GameId]
 
   def getGame(id: UUID): ServiceCall[NotUsed, Game]
@@ -24,7 +26,12 @@ trait GameService extends Service {
       pathCall("/api/recurring-game/:id", getGame _),
       restCall(Method.POST, "/api/recurring-game/:id/terminate", terminateGame _)
     ).withTopics(
-      topic("game-GameEvent", this.gameEvents)
+      topic(GameEventTopicName, this.gameEvents)
     ).withAutoAcl(true)
   }
 }
+
+object GameService {
+  final val GameEventTopicName = "game-GameEvent"
+}
+
