@@ -36,7 +36,7 @@ class GameServiceImplIntegrationTest extends AsyncWordSpec with Matchers with Be
     }
 
 
-    "emit game started event" in {
+    "emit game created event" in {
       import server.materializer
 
       for {
@@ -50,12 +50,11 @@ class GameServiceImplIntegrationTest extends AsyncWordSpec with Matchers with Be
         events.head shouldBe an[api.GameCreated]
       }
     }
-  }
 
-
-  "terminate game by id" in {
-    gameService.terminateGame(GameId).invoke(NotUsed) map {
-      response => response should ===(Done)
+    "terminate game by id" in {
+      gameService.terminateGame(GameId).invoke(NotUsed) map {
+        response => response should ===(Done)
+      }
     }
   }
 
