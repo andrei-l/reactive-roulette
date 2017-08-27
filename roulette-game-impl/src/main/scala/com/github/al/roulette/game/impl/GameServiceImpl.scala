@@ -14,7 +14,7 @@ import com.lightbend.lagom.scaladsl.persistence.{EventStreamElement, PersistentE
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class GameServiceImpl(registry: PersistentEntityRegistry)(implicit ec: ExecutionContext) extends GameService {
+class GameServiceImpl(entityRegistry: PersistentEntityRegistry)(implicit ec: ExecutionContext) extends GameService {
   override def createGame: ServiceCall[Game, GameId] = ServiceCall { game =>
     val id = UUID.randomUUID()
     entityRef(id)
@@ -34,22 +34,22 @@ class GameServiceImpl(registry: PersistentEntityRegistry)(implicit ec: Execution
   }
 
   override def gameEvents: Topic[api.GameEvent] = TopicProducer.singleStreamWithOffset { offset =>
-    registry.eventStream(GameEvent.Tag, offset)
+    entityRegistry.eventStream(GameEvent.Tag, offset)
       .filter {
         _.event match {
           case _: GameCreated => true
           case _ => false
         }
-      }.mapAsync(1)(convertEvent)
+      }.mapAsync(1)(convertToApiEvent)
   }
 
-  private def convertEvent: EventStreamElement[GameEvent] => Future[(api.GameEvent, Offset)] = {
+  private def convertToApiEvent: EventStreamElement[GameEvent] => Future[(api.GameEvent, Offset)] = {
     case EventStreamElement(itemId, GameCreated(GameState(_, gameDuration, _, _)), offset) =>
       Future.successful(api.GameCreated(UUID.fromString(itemId), gameDuration) -> offset)
   }
 
   private def entityRef(gameId: UUID) = entityRefString(gameId.toString)
 
-  private def entityRefString(gameId: String) = registry.refFor[GameEntity](gameId)
+  private def entityRefString(gameId: String) = entityRegistry.refFor[GameEntity](gameId)
 
 }
