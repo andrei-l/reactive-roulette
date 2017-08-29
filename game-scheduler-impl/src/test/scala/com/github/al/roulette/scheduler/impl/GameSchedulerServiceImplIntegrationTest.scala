@@ -6,7 +6,7 @@ import java.util.UUID
 import akka.stream.scaladsl.Sink
 import com.github.al.roulette.game.api._
 import com.github.al.roulette.scheduler.SchedulerComponents
-import com.github.al.roulette.scheduler.api.{GameFinished, GameSchedulerService, GameStarted, ScheduledEvent}
+import com.github.al.roulette.scheduler.api.{GameFinished, GameSchedulerService, GameStarted, ScheduledGameEvent}
 import com.lightbend.lagom.scaladsl.server.{LagomApplication, LocalServiceLocator}
 import com.lightbend.lagom.scaladsl.testkit.{ProducerStub, ProducerStubFactory, ServiceTest, TestTopicComponents}
 import org.mockito.Mockito.when
@@ -20,7 +20,7 @@ import scala.language.postfixOps
 class GameSchedulerServiceImplIntegrationTest extends AsyncWordSpec with Matchers with BeforeAndAfterAll with MockitoSugar {
   private final val GameId = UUID.fromString("7e595fac-830e-44f1-b73e-f8fd60594ace")
   private val mockGameService = mock[GameService]
-  var gameEventsProducerStub: ProducerStub[GameEvent] = _
+  private var gameEventsProducerStub: ProducerStub[GameEvent] = _
 
   private val server = ServiceTest.startServer(ServiceTest.defaultSetup.withCassandra(true)) { ctx =>
     new LagomApplication(ctx) with SchedulerComponents with LocalServiceLocator with TestTopicComponents {
@@ -45,7 +45,7 @@ class GameSchedulerServiceImplIntegrationTest extends AsyncWordSpec with Matcher
         gameEventsProducerStub.send(GameCreated(GameId, Duration.ofMillis(50)))
       }
       for {
-        events: Seq[ScheduledEvent] <- schedulerService.scheduledEvents.subscribe.atMostOnceSource
+        events: Seq[ScheduledGameEvent] <- schedulerService.scheduledEvents.subscribe.atMostOnceSource
           .filter(_.gameId == GameId)
           .take(2)
           .runWith(Sink.seq)

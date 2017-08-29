@@ -7,22 +7,22 @@ import julienrf.json.derived
 import play.api.libs.json.{Format, Json, __}
 
 
-sealed trait ScheduledEvent {
+sealed trait ScheduledGameEvent {
   val gameId: UUID
 }
 
-case class GameStarted(gameId: UUID) extends ScheduledEvent
+case class GameStarted(gameId: UUID) extends ScheduledGameEvent
 
 object GameStarted {
   implicit val format: Format[GameStarted] = Json.format
 }
 
-case class GameFinished(gameId: UUID) extends ScheduledEvent
+case class GameFinished(gameId: UUID) extends ScheduledGameEvent
 
 object GameFinished {
   implicit val format: Format[GameFinished] = Json.format
 }
 
-object ScheduledEvent {
-  implicit val format: Format[ScheduledEvent] = derived.flat.oformat((__ \ "type").format[String])
+object ScheduledGameEvent {
+  implicit val format: Format[ScheduledGameEvent] = derived.flat.oformat((__ \ "type").format[String])
 }

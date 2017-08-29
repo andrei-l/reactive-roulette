@@ -6,7 +6,7 @@ import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Flow
 import com.github.al.roulette.game.api.{GameCreated, GameEvent, GameService}
-import com.github.al.roulette.scheduler.api.{GameFinished, GameStarted, ScheduledEvent}
+import com.github.al.roulette.scheduler.api.{GameFinished, GameStarted, ScheduledGameEvent}
 import com.lightbend.lagom.scaladsl.pubsub.{PubSubRegistry, TopicId}
 
 import scala.concurrent.duration.{DurationDouble, FiniteDuration}
@@ -17,7 +17,7 @@ import scala.language.postfixOps
 class GameScheduler(gameService: GameService,
                     system: ActorSystem,
                     pubSub: PubSubRegistry)(implicit ec: ExecutionContext) {
-  private val gameSchedulerEventsTopic = pubSub.refFor(TopicId[ScheduledEvent])
+  private val gameSchedulerEventsTopic = pubSub.refFor(TopicId[ScheduledGameEvent])
 
   gameService.gameEvents.subscribe.atLeastOnce(Flow[GameEvent].mapAsync(1) {
     case GameCreated(gameId, gameDuration) => runGame(gameId, gameDuration.toMillis millis)
