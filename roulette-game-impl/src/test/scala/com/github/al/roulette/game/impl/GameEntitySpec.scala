@@ -8,13 +8,15 @@ import akka.testkit.TestKit
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
 import com.lightbend.lagom.scaladsl.testkit.PersistentEntityTestDriver
 import com.lightbend.lagom.scaladsl.testkit.PersistentEntityTestDriver.Reply
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterAll, Matchers, OptionValues, WordSpec}
 
-class GameEntitySpec extends WordSpec with Matchers with BeforeAndAfterAll with OptionValues {
+class GameEntitySpec extends WordSpec with Matchers with BeforeAndAfterAll with OptionValues with MockitoSugar {
   private final val GameId = "7e595fac-830e-44f1-b73e-f8fd60594ace"
   private final val SampleGameState = GameState("Some new game", Duration.ofMinutes(30))
 
   private val system = ActorSystem("test", JsonSerializerRegistry.actorSystemSetupFor(GameSerializerRegistry))
+  private val mockRouletteBallLander = mock[RouletteBallLander]
 
 
   "The game entity" should {
@@ -34,7 +36,7 @@ class GameEntitySpec extends WordSpec with Matchers with BeforeAndAfterAll with 
   }
 
   private def withDriver[T](block: PersistentEntityTestDriver[GameCommand, GameEvent, Option[GameState]] => T): T = {
-    val driver = new PersistentEntityTestDriver(system, new GameEntity, GameId)
+    val driver = new PersistentEntityTestDriver(system, new GameEntity(mockRouletteBallLander), GameId)
     try {
       block(driver)
     } finally {

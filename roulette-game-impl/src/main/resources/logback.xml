@@ -13,7 +13,7 @@
     </appender>
 
     <logger name="play" level="WARN" />
-    <logger name="akka" level="WARN" />
+    <logger name="akka" level="INFO" />
     <logger name="com.lightbend.lagom" level="INFO" />
     <logger name="org.apache.cassandra" level="ERROR" />
     <logger name="com.datastax.driver" level="ERROR" />

@@ -9,13 +9,11 @@ object GameSerializerRegistry extends JsonSerializerRegistry {
     JsonSerializer[CreateGame],
     JsonSerializer[FinishGame.type],
     JsonSerializer[GetGame.type],
-    JsonSerializer[StartGame],
 
     JsonSerializer[GameCreated],
+    JsonSerializer[GameStarted.type],
     JsonSerializer[GameFinished.type],
-    JsonSerializer[GameStarted.type]
-
-
+    JsonSerializer[GameResulted]
   )
 }
 

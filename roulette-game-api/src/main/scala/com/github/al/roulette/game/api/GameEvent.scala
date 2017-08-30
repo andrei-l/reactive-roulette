@@ -14,9 +14,26 @@ sealed trait GameEvent {
 
 case class GameCreated(gameId: UUID, gameDuration: Duration) extends GameEvent
 
-
 object GameCreated {
   implicit val format: Format[GameCreated] = Json.format
+}
+
+case class GameStarted(gameId: UUID) extends GameEvent
+
+object GameStarted {
+  implicit val format: Format[GameStarted] = Json.format
+}
+
+case class GameFinished(gameId: UUID) extends GameEvent
+
+object GameFinished {
+  implicit val format: Format[GameFinished] = Json.format
+}
+
+case class GameResulted(gameId: UUID, winningNumber: Int) extends GameEvent
+
+object GameResulted {
+  implicit val format: Format[GameResulted] = Json.format
 }
 
 object GameEvent {

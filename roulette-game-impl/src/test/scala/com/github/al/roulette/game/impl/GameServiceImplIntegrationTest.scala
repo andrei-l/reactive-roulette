@@ -4,22 +4,40 @@ import java.time.Duration
 import java.util.UUID
 
 import akka.stream.scaladsl.Sink
-import akka.{Done, NotUsed}
 import com.github.al.roulette.game.api.{Game, GameService}
 import com.github.al.roulette.game.{GameComponents, api}
+import com.github.al.roulette.scheduler
+import com.github.al.roulette.scheduler.api.{GameSchedulerService, ScheduledGameEvent}
 import com.lightbend.lagom.scaladsl.server.{LagomApplication, LocalServiceLocator}
-import com.lightbend.lagom.scaladsl.testkit.{ServiceTest, TestTopicComponents}
+import com.lightbend.lagom.scaladsl.testkit.{ProducerStub, ProducerStubFactory, ServiceTest, TestTopicComponents}
+import org.mockito.Mockito.when
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{AsyncWordSpec, BeforeAndAfterAll, Matchers}
 import play.api.libs.ws.ahc.AhcWSComponents
 
 import scala.collection.immutable.Seq
+import scala.language.postfixOps
 
-class GameServiceImplIntegrationTest extends AsyncWordSpec with Matchers with BeforeAndAfterAll {
-  private final val GameId = UUID.fromString("7e595fac-830e-44f1-b73e-f8fd60594ace")
-  private final val SampleGame = Game("Some new game", Duration.ofMinutes(30))
+class GameServiceImplIntegrationTest extends AsyncWordSpec with Matchers with BeforeAndAfterAll with MockitoSugar {
+  private final val GameDuration = Duration.ofMinutes(30)
+  private final val SampleGame = Game("Some new game", GameDuration)
+  private final val SampleWinningNumber = 14
+  private val mockGameSchedulerService = mock[GameSchedulerService]
+  private val mockRouletteBallLander = mock[RouletteBallLander]
+  private var scheduledGameEventsProducerStub: ProducerStub[ScheduledGameEvent] = _
+
 
   private val server = ServiceTest.startServer(ServiceTest.defaultSetup.withCassandra(true)) { ctx =>
-    new LagomApplication(ctx) with GameComponents with LocalServiceLocator with AhcWSComponents with TestTopicComponents
+    new LagomApplication(ctx) with GameComponents with LocalServiceLocator with AhcWSComponents with TestTopicComponents {
+      val stubFactory = new ProducerStubFactory(actorSystem, materializer)
+      scheduledGameEventsProducerStub = stubFactory.producer[ScheduledGameEvent](GameSchedulerService.ScheduledGameEventTopicName)
+
+      when(mockGameSchedulerService.scheduledEvents).thenReturn(scheduledGameEventsProducerStub.topic)
+      when(mockRouletteBallLander.landBall()).thenReturn(SampleWinningNumber)
+
+      override lazy val gameSchedulerService: GameSchedulerService = mockGameSchedulerService
+      override lazy val rouletteBallLander: RouletteBallLander = mockRouletteBallLander
+    }
   }
 
   private val gameService = server.serviceClient.implement[GameService]
@@ -27,6 +45,7 @@ class GameServiceImplIntegrationTest extends AsyncWordSpec with Matchers with Be
 
   "The GameService" should {
     "allow game creation" in {
+
       for {
         createdGameId <- createSampleGame
         retrieved <- getGame(createdGameId.gameId)
@@ -51,9 +70,30 @@ class GameServiceImplIntegrationTest extends AsyncWordSpec with Matchers with Be
       }
     }
 
-    "terminate game by id" in {
-      gameService.terminateGame(GameId).invoke(NotUsed) map {
-        response => response should ===(Done)
+    "emit game create, started & finished events" in {
+      import server.materializer
+      server.application.scheduledEventsSubscriber
+
+      for {
+        createdGameId <- createSampleGame
+        gameId = createdGameId.gameId
+        _ = scheduledGameEventsProducerStub.send(scheduler.api.GameStarted(gameId))
+        _ = scheduledGameEventsProducerStub.send(scheduler.api.GameFinished(gameId))
+        gameEvents <- gameService.gameEvents.subscribe.atMostOnceSource
+          .filter(_.gameId == gameId)
+          .take(3)
+          .runWith(Sink.seq)
+        gameResultsEvents <- gameService.gameResultEvents.subscribe.atMostOnceSource
+          .filter(_.gameId == gameId)
+          .take(1)
+          .runWith(Sink.seq)
+      } yield {
+        gameEvents should contain allOf(
+          api.GameCreated(gameId, GameDuration),
+          api.GameStarted(gameId),
+          api.GameFinished(gameId)
+        )
+        gameResultsEvents.head shouldBe api.GameResulted(gameId, SampleWinningNumber)
       }
     }
   }
