@@ -1,4 +1,4 @@
-import Dependencies._
+import Dependencies.{scalaTest, _}
 import sbt.Keys._
 
 lagomCassandraCleanOnStart in ThisBuild := false
@@ -35,8 +35,7 @@ lazy val `roulette-game-impl` = (project in file("roulette-game-impl"))
       lagomScaladslTestKit,
       lagomScaladslKafkaBroker,
       datastaxCassandraDriverExtras,
-      macwire,
-      scalaTest
+      macwire
     )
   )
   .enablePlugins(LagomScala)
@@ -62,8 +61,7 @@ lazy val `game-scheduler-impl` = (project in file("game-scheduler-impl"))
       lagomScaladslTestKit,
       lagomScaladslKafkaBroker,
       lagomScaladslPubSub,
-      macwire,
-      scalaTest
+      macwire
     )
   )
   .enablePlugins(LagomScala)
@@ -88,8 +86,7 @@ lazy val `roulette-bets-impl` = (project in file("roulette-bets-impl"))
       lagomScaladslTestKit,
       lagomScaladslKafkaBroker,
       datastaxCassandraDriverExtras,
-      macwire,
-      scalaTest
+      macwire
     )
   )
   .enablePlugins(LagomScala)
@@ -116,8 +113,7 @@ lazy val `player-winnings-impl` = (project in file("player-winnings-impl"))
       lagomScaladslTestKit,
       lagomScaladslKafkaBroker,
       datastaxCassandraDriverExtras,
-      macwire,
-      scalaTest
+      macwire
     )
   )
   .enablePlugins(LagomScala)
@@ -144,8 +140,7 @@ lazy val `players-impl` = (project in file("players-impl"))
       lagomScaladslTestKit,
       lagomScaladslKafkaBroker,
       datastaxCassandraDriverExtras,
-      macwire,
-      scalaTest
+      macwire
     )
   )
   .enablePlugins(LagomScala)
@@ -157,8 +152,7 @@ lazy val `json-extensions` = (project in file("json-extensions"))
   .settings(
     libraryDependencies ++= Seq(
       lagomScaladslApi,
-      playJsonDerivedCodecs,
-      scalaTest
+      playJsonDerivedCodecs
     )
   )
 
@@ -176,5 +170,6 @@ lazy val commonSettings = List(
   scalastyleFailOnError := true,
   testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-u", "target/test-reports"),
   scalacOptions ++= Seq("-feature", "-deprecation"),
-  libraryDependencies += mockitoCore
+  libraryDependencies ++= Seq(scalaTest, scalaCheck, mockitoCore)
+
 )

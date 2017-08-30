@@ -8,7 +8,6 @@ import akka.testkit.TestKit
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
 import com.lightbend.lagom.scaladsl.testkit.PersistentEntityTestDriver
 import com.lightbend.lagom.scaladsl.testkit.PersistentEntityTestDriver.Reply
-import org.mockito.Mockito
 import org.mockito.Mockito.when
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterAll, Matchers, OptionValues, WordSpec}
