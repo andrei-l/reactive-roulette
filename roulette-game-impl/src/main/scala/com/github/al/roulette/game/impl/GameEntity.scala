@@ -15,7 +15,7 @@ class GameEntity(rouletteBallLander: RouletteBallLander) extends PersistentEntit
   override def behavior: Behavior = {
     case None => notCreated
     case Some(gameState@GameState(_, _, None, None, None)) => created(gameState)
-    case Some(gameState@GameState(_, _, Some(_), None, None)) => started(gameState)
+    case Some(gameState@GameState(_, _, Some(_), _, None)) => started(gameState)
     case Some(gameState@GameState(_, _, Some(_), Some(_), Some(_))) => finished(gameState)
     case _ => getGameCommand
   }

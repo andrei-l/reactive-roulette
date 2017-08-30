@@ -7,6 +7,7 @@ object GameSerializerRegistry extends JsonSerializerRegistry {
     JsonSerializer[GameState],
 
     JsonSerializer[CreateGame],
+    JsonSerializer[StartGame.type],
     JsonSerializer[FinishGame.type],
     JsonSerializer[GetGame.type],
 
