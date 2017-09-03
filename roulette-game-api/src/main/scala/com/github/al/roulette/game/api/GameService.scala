@@ -13,8 +13,6 @@ trait GameService extends Service {
 
   def getGame(id: UUID): ServiceCall[NotUsed, Game]
 
-  def terminateGame(id: UUID): ServiceCall[NotUsed, Done]
-
   def gameEvents: Topic[GameEvent]
 
   def gameResultEvents: Topic[GameResulted]
@@ -24,8 +22,7 @@ trait GameService extends Service {
 
     named("game").withCalls(
       pathCall("/api/recurring-game", createGame),
-      pathCall("/api/recurring-game/:id", getGame _),
-      restCall(Method.POST, "/api/recurring-game/:id/terminate", terminateGame _)
+      pathCall("/api/recurring-game/:id", getGame _)
     ).withTopics(
       topic(GameEventTopicName, this.gameEvents),
       topic(GameResultEventTopicName, this.gameResultEvents)

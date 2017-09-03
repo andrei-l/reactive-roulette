@@ -33,10 +33,6 @@ class GameServiceImpl(override val entityRegistry: PersistentEntityRegistry)(imp
     }
   }
 
-  override def terminateGame(id: UUID): ServiceCall[NotUsed, Done] = ServiceCall {
-    _ => Future.successful(Done)
-  }
-
   override def gameEvents: Topic[api.GameEvent] = TopicProducer.singleStreamWithOffset { offset =>
     entityRegistry.eventStream(GameEvent.Tag, offset)
       .filter {
