@@ -4,6 +4,7 @@ import java.util.UUID
 
 import com.lightbend.lagom.scaladsl.persistence.{PersistentEntity, PersistentEntityRef, PersistentEntityRegistry}
 
+import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
 trait PersistentEntityRegistrySugar {
@@ -13,5 +14,5 @@ trait PersistentEntityRegistrySugar {
 
   def entityRefString[P <: PersistentEntity : ClassTag](id: String): PersistentEntityRef[P#Command] = entityRegistry.refFor[P](id)
 
-
+  protected implicit def stringToUUID(s: String): UUID = UUID.fromString(s)
 }

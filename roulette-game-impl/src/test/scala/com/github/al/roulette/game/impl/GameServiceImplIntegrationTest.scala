@@ -44,7 +44,7 @@ class GameServiceImplIntegrationTest extends AsyncWordSpec with Matchers with Be
 
 
   "The GameService" should {
-    "allow game creation" in {
+    "allow game creation & fetching" in {
 
       for {
         createdGameId <- createSampleGame
@@ -53,7 +53,6 @@ class GameServiceImplIntegrationTest extends AsyncWordSpec with Matchers with Be
         SampleGame should ===(retrieved)
       }
     }
-
 
     "emit game created event" in {
       import server.materializer
