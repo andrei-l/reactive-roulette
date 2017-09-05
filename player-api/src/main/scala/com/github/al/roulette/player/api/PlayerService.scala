@@ -10,6 +10,8 @@ import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
 trait PlayerService extends Service {
   def registerPlayer: ServiceCall[Player, PlayerId]
 
+  def login: ServiceCall[PlayerCredentials, PlayerAccessToken]
+
   def getPlayer(id: UUID): ServiceCall[NotUsed, Player]
 
   def playerEvents: Topic[PlayerEvent]
@@ -19,6 +21,7 @@ trait PlayerService extends Service {
 
     named("player").withCalls(
       pathCall("/api/player", registerPlayer),
+      pathCall("/api/login", login),
       pathCall("/api/player/:id", getPlayer _)
     ).withTopics(
       topic(PlayerEventTopicName, this.playerEvents)

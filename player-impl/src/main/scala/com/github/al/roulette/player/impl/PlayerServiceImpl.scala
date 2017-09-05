@@ -5,7 +5,7 @@ import java.util.UUID
 import akka.NotUsed
 import com.github.al.persistence.PersistentEntityRegistrySugar
 import com.github.al.roulette.player.api
-import com.github.al.roulette.player.api.{Player, PlayerId, PlayerService}
+import com.github.al.roulette.player.api._
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.transport.NotFound
@@ -20,13 +20,17 @@ class PlayerServiceImpl(override val entityRegistry: PersistentEntityRegistry)(i
 
   override def registerPlayer: ServiceCall[Player, PlayerId] = ServiceCall { player =>
     val id = UUID.randomUUID()
-    entityRefUuid[PlayerEntity](id)
+    entityRef[PlayerEntity](id)
       .ask(CreatePlayer(PlayerState(player.playerName)))
       .map(_ => PlayerId(id))
   }
 
+  override def login: ServiceCall[PlayerCredentials, PlayerAccessToken] = ServiceCall { credentials =>
+    Future.successful(PlayerAccessToken(""))
+  }
+
   override def getPlayer(id: UUID): ServiceCall[NotUsed, Player] = ServiceCall { _ =>
-    entityRefUuid[PlayerEntity](id).ask(GetPlayer).map {
+    entityRef[PlayerEntity](id).ask(GetPlayer).map {
       case Some(playerState) => Player(playerState.playerName)
       case None => throw NotFound(s"Player $id not found")
     }

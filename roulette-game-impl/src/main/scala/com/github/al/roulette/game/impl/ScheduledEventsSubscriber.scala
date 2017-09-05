@@ -14,7 +14,7 @@ class ScheduledEventsSubscriber(gameSchedulerService: GameSchedulerService,
 
   gameSchedulerService.scheduledEvents.subscribe.atLeastOnce(Flow[ScheduledGameEvent].mapAsync(1) {
     e =>
-      entityRefUuid[GameEntity](e.gameId).ask(e match {
+      entityRef[GameEntity](e.gameId).ask(e match {
         case _: scheduler.api.GameStarted => StartGame
         case _: scheduler.api.GameFinished => FinishGame
       })

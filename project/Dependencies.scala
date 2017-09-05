@@ -8,4 +8,5 @@ object Dependencies {
   lazy val mockitoCore: ModuleID = "org.mockito" % "mockito-core" % "2.9.0" % Test
   lazy val datastaxCassandraDriverExtras: ModuleID = "com.datastax.cassandra" % "cassandra-driver-extras" % "3.0.0"
   lazy val playJsonDerivedCodecs: ModuleID = "org.julienrf" %% "play-json-derived-codecs" % "3.3"
+  lazy val jwtPlayJson: ModuleID = "com.pauldijou" %% "jwt-play-json" % "0.14.0"
 }

@@ -7,12 +7,8 @@ import com.lightbend.lagom.scaladsl.persistence.{PersistentEntity, PersistentEnt
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
-trait PersistentEntityRegistrySugar {
+trait PersistentEntityRegistrySugar extends UUIDConversions {
   val entityRegistry: PersistentEntityRegistry
 
-  def entityRefUuid[P <: PersistentEntity : ClassTag](id: UUID): PersistentEntityRef[P#Command] = entityRefString(id.toString)
-
-  def entityRefString[P <: PersistentEntity : ClassTag](id: String): PersistentEntityRef[P#Command] = entityRegistry.refFor[P](id)
-
-  protected implicit def stringToUUID(s: String): UUID = UUID.fromString(s)
+  def entityRef[P <: PersistentEntity : ClassTag](id: UUID): PersistentEntityRef[P#Command] = entityRegistry.refFor[P](id)
 }

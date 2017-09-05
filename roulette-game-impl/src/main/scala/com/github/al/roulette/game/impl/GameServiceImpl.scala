@@ -21,13 +21,13 @@ class GameServiceImpl(override val entityRegistry: PersistentEntityRegistry)(imp
     with PersistentEntityRegistrySugar {
   override def createGame: ServiceCall[Game, GameId] = ServiceCall { game =>
     val id = UUID.randomUUID()
-    entityRefUuid[GameEntity](id)
+    entityRef[GameEntity](id)
       .ask(CreateGame(GameState(game.gameName, game.gameDuration)))
       .map(_ => GameId(id))
   }
 
   override def getGame(id: UUID): ServiceCall[NotUsed, Game] = ServiceCall { _ =>
-    entityRefUuid[GameEntity](id).ask(GetGame).map {
+    entityRef[GameEntity](id).ask(GetGame).map {
       case Some(gameState) => Game(gameState.gameName, gameState.gameDuration)
       case None => throw NotFound(s"Game $id not found");
     }

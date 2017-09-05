@@ -86,7 +86,8 @@ lazy val `roulette-bets-impl` = (project in file("roulette-bets-impl"))
       lagomScaladslTestKit,
       lagomScaladslKafkaBroker,
       datastaxCassandraDriverExtras,
-      macwire
+      macwire,
+      jwtPlayJson
     )
   )
   .enablePlugins(LagomScala)
@@ -141,7 +142,8 @@ lazy val `player-impl` = (project in file("player-impl"))
       lagomScaladslTestKit,
       lagomScaladslKafkaBroker,
       datastaxCassandraDriverExtras,
-      macwire
+      macwire,
+      jwtPlayJson
     )
   )
   .enablePlugins(LagomScala)
