@@ -17,3 +17,9 @@ case class PlayerCreated(playerState: PlayerState) extends PlayerEvent
 case object PlayerCreated {
   implicit val format: Format[PlayerCreated] = Json.format
 }
+
+case class AccessTokenIssued(accessToken: String) extends PlayerEvent
+
+case object AccessTokenIssued {
+  implicit val format: Format[AccessTokenIssued] = Json.format
+}

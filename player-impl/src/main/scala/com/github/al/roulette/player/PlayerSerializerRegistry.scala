@@ -8,9 +8,11 @@ object PlayerSerializerRegistry extends JsonSerializerRegistry {
     JsonSerializer[PlayerState],
 
     JsonSerializer[CreatePlayer],
+    JsonSerializer[IssueAccessToken.type],
     JsonSerializer[GetPlayer.type],
 
-    JsonSerializer[PlayerCreated]
+    JsonSerializer[PlayerCreated],
+    JsonSerializer[AccessTokenIssued]
   )
 }
 

@@ -3,20 +3,29 @@ package com.github.al.roulette.player.impl
 import java.util.UUID
 
 import akka.stream.scaladsl.Sink
-import com.github.al.roulette.player.api.{Player, PlayerService}
+import com.github.al.persistence.UUIDConversions
+import com.github.al.roulette.player.api.{Player, PlayerCredentials, PlayerService}
+import com.github.al.roulette.player.impl.PlayerAccessTokenValidator.isValidAccessToken
 import com.github.al.roulette.player.{PlayerComponents, api}
+import com.lightbend.lagom.scaladsl.api.AdditionalConfiguration
 import com.lightbend.lagom.scaladsl.server.{LagomApplication, LocalServiceLocator}
 import com.lightbend.lagom.scaladsl.testkit.{ServiceTest, TestTopicComponents}
 import org.scalatest.{AsyncWordSpec, BeforeAndAfterAll, Matchers}
+import play.api.Configuration
 import play.api.libs.ws.ahc.AhcWSComponents
 
 import scala.collection.immutable.Seq
 
-class PlayerServiceImplIntegrationTest extends AsyncWordSpec with Matchers with BeforeAndAfterAll {
+class PlayerServiceImplIntegrationTest extends AsyncWordSpec with Matchers with BeforeAndAfterAll with UUIDConversions {
   private final val SamplePlayer = Player("some name")
 
   private val server = ServiceTest.startServer(ServiceTest.defaultSetup.withCassandra(true)) { ctx =>
-    new LagomApplication(ctx) with PlayerComponents with LocalServiceLocator with AhcWSComponents with TestTopicComponents
+    new LagomApplication(ctx) with PlayerComponents with LocalServiceLocator with AhcWSComponents with TestTopicComponents {
+      override def additionalConfiguration: AdditionalConfiguration =
+        super.additionalConfiguration ++ Configuration.from(Map(
+          "cassandra-query-journal.eventual-consistency-delay" -> "0"
+        ))
+    }
   }
 
   private val playerService = server.serviceClient.implement[PlayerService]
@@ -26,7 +35,7 @@ class PlayerServiceImplIntegrationTest extends AsyncWordSpec with Matchers with 
     "allow player creation & fetching" in {
 
       for {
-        createdPlayerId <- createSamplePlayer
+        createdPlayerId <- createPlayer()
         retrieved <- getPlayer(createdPlayerId.playerId)
       } yield {
         SamplePlayer should ===(retrieved)
@@ -37,11 +46,30 @@ class PlayerServiceImplIntegrationTest extends AsyncWordSpec with Matchers with 
       import server.materializer
 
       for {
-        createdPlayerId <- createSamplePlayer
+        createdPlayerId <- createPlayer()
         events: Seq[api.PlayerEvent] <- playerService.playerEvents.subscribe.atMostOnceSource
           .filter(_.playerId == createdPlayerId.playerId)
           .take(1)
           .runWith(Sink.seq)
+      } yield {
+        events.size shouldBe 1
+        events.head shouldBe an[api.PlayerRegistered]
+      }
+    }
+
+    "login user by providing access token" in {
+      import server.materializer
+
+      val samplePlayer2 = Player("some new name")
+
+      for {
+        createdPlayerId <- createPlayer(samplePlayer2)
+        events: Seq[api.PlayerEvent] <- playerService.playerEvents.subscribe.atMostOnceSource
+          .filter(_.playerId == createdPlayerId.playerId)
+          .take(1)
+          .runWith(Sink.seq)
+        playerAccessToken <- login(samplePlayer2)
+        if isValidAccessToken(playerAccessToken.token, createdPlayerId.playerId)
       } yield {
         events.size shouldBe 1
         events.head shouldBe an[api.PlayerRegistered]
@@ -52,7 +80,9 @@ class PlayerServiceImplIntegrationTest extends AsyncWordSpec with Matchers with 
 
   private def getPlayer(playerId: UUID) = playerService.getPlayer(playerId).invoke
 
-  private def createSamplePlayer = playerService.registerPlayer.invoke(SamplePlayer)
+  private def createPlayer(player: Player = SamplePlayer) = playerService.registerPlayer.invoke(player)
+
+  private def login(player: Player = SamplePlayer) = playerService.login.invoke(PlayerCredentials(player.playerName))
 
   override protected def afterAll(): Unit = server.stop()
 

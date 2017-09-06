@@ -16,3 +16,7 @@ object CreatePlayer {
 case object GetPlayer extends PlayerCommand with ReplyType[Option[PlayerState]] {
   implicit val format: Format[GetPlayer.type] = singletonFormat(GetPlayer)
 }
+
+case object IssueAccessToken extends PlayerCommand with ReplyType[String] {
+  implicit val format: Format[IssueAccessToken.type] = singletonFormat(IssueAccessToken)
+}

@@ -1,7 +1,7 @@
 package com.github.al.roulette.player
 
 import com.github.al.roulette.player.api.PlayerService
-import com.github.al.roulette.player.impl.{PlayerEntity, PlayerServiceImpl}
+import com.github.al.roulette.player.impl.{PlayerEntity, PlayerEventReadSideProcessor, PlayerRepository, PlayerServiceImpl}
 import com.lightbend.lagom.scaladsl.broker.kafka.LagomKafkaComponents
 import com.lightbend.lagom.scaladsl.client.ServiceClient
 import com.lightbend.lagom.scaladsl.devmode.LagomDevModeComponents
@@ -23,15 +23,16 @@ trait PlayerComponents extends LagomServerComponents
 
   override lazy val lagomServer: LagomServer = serverFor[PlayerService](wire[PlayerServiceImpl])
   override lazy val jsonSerializerRegistry = PlayerSerializerRegistry
+  private lazy val playerRepository = wire[PlayerRepository]
 
   persistentEntityRegistry.register(wire[PlayerEntity])
+  readSide.register(wire[PlayerEventReadSideProcessor])
 }
 
 abstract class PlayerApplication(context: LagomApplicationContext) extends LagomApplication(context)
   with PlayerComponents
   with AhcWSComponents
-  with LagomKafkaComponents {
-}
+  with LagomKafkaComponents
 
 class PlayerApplicationLoader extends LagomApplicationLoader {
   override def load(context: LagomApplicationContext) =

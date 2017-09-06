@@ -14,7 +14,8 @@ import com.lightbend.lagom.scaladsl.persistence.{EventStreamElement, PersistentE
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class PlayerServiceImpl(override val entityRegistry: PersistentEntityRegistry)(implicit val executionContext: ExecutionContext)
+class PlayerServiceImpl(override val entityRegistry: PersistentEntityRegistry,
+                        playerRepository: PlayerRepository)(implicit val executionContext: ExecutionContext)
   extends PlayerService
     with PersistentEntityRegistrySugar {
 
@@ -26,7 +27,10 @@ class PlayerServiceImpl(override val entityRegistry: PersistentEntityRegistry)(i
   }
 
   override def login: ServiceCall[PlayerCredentials, PlayerAccessToken] = ServiceCall { credentials =>
-    Future.successful(PlayerAccessToken(""))
+    for {
+      playerId <- playerRepository.getPlayerIdByName(credentials.playerName)
+      accessToken <- entityRef[PlayerEntity](playerId).ask(IssueAccessToken)
+    } yield PlayerAccessToken(accessToken)
   }
 
   override def getPlayer(id: UUID): ServiceCall[NotUsed, Player] = ServiceCall { _ =>
