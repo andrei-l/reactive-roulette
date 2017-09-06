@@ -7,7 +7,7 @@ import org.scalatest.Matchers
 
 import scala.language.{higherKinds, reflectiveCalls}
 
-trait PlayerEntitySpecSugar extends Matchers {
+trait EntitySpecSugar extends Matchers {
   type P <: PersistentEntity
 
   def persistenceEntity: P {type Command = P#Command; type Event = P#Event; type State = P#State}

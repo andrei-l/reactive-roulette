@@ -5,12 +5,12 @@ import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import com.github.al.roulette.player.PlayerSerializerRegistry
 import com.github.al.roulette.player.impl.PlayerAccessTokenValidator.isValidAccessToken
-import com.github.al.roulette.test.persistence.PlayerEntitySpecSugar
+import com.github.al.roulette.test.persistence.EntitySpecSugar
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
 import com.lightbend.lagom.scaladsl.testkit.PersistentEntityTestDriver.Reply
 import org.scalatest.{BeforeAndAfterAll, Matchers, OptionValues, WordSpec}
 
-class PlayerEntitySpec extends WordSpec with Matchers with BeforeAndAfterAll with OptionValues with PlayerEntitySpecSugar {
+class PlayerEntitySpec extends WordSpec with Matchers with BeforeAndAfterAll with OptionValues with EntitySpecSugar {
   override type P = PlayerEntity
 
   private final val PlayerName = "Some player"

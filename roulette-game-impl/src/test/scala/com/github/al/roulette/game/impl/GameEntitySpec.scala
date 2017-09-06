@@ -5,14 +5,14 @@ import java.time.Duration
 import akka.Done
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
-import com.github.al.roulette.test.persistence.PlayerEntitySpecSugar
+import com.github.al.roulette.test.persistence.EntitySpecSugar
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
 import com.lightbend.lagom.scaladsl.testkit.PersistentEntityTestDriver.Reply
 import org.mockito.Mockito.when
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterAll, Matchers, OptionValues, WordSpec}
 
-class GameEntitySpec extends WordSpec with Matchers with BeforeAndAfterAll with OptionValues with MockitoSugar with PlayerEntitySpecSugar {
+class GameEntitySpec extends WordSpec with Matchers with BeforeAndAfterAll with OptionValues with MockitoSugar with EntitySpecSugar {
   override type P = GameEntity
 
   private final val GameName = "Some new game"
