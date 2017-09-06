@@ -21,7 +21,7 @@ trait PlayerService extends Service {
 
     named("player").withCalls(
       pathCall("/api/player", registerPlayer),
-      pathCall("/api/login", login),
+      pathCall("/api/player/login", login),
       pathCall("/api/player/:id", getPlayer _)
     ).withTopics(
       topic(PlayerEventTopicName, this.playerEvents)
