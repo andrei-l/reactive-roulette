@@ -5,21 +5,25 @@ import java.time.Duration
 import akka.Done
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
+import com.github.al.roulette.test.persistence.PlayerEntitySpecSugar
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
-import com.lightbend.lagom.scaladsl.testkit.PersistentEntityTestDriver
 import com.lightbend.lagom.scaladsl.testkit.PersistentEntityTestDriver.Reply
 import org.mockito.Mockito.when
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfterAll, Matchers, OptionValues, WordSpec}
 
-class GameEntitySpec extends WordSpec with Matchers with BeforeAndAfterAll with OptionValues with MockitoSugar {
-  private final val GameId = "7e595fac-830e-44f1-b73e-f8fd60594ace"
+class GameEntitySpec extends WordSpec with Matchers with BeforeAndAfterAll with OptionValues with MockitoSugar with PlayerEntitySpecSugar {
+  override type P = GameEntity
+
   private final val GameName = "Some new game"
   private final val GameDuration = Duration.ofMinutes(30)
   private final val SampleGameState = GameState(GameName, GameDuration)
 
-  private val system = ActorSystem("test", JsonSerializerRegistry.actorSystemSetupFor(GameSerializerRegistry))
+  private implicit val system = ActorSystem("test", JsonSerializerRegistry.actorSystemSetupFor(GameSerializerRegistry))
   private val mockRouletteBallLander = mock[RouletteBallLander]
+
+  override def persistenceEntity = new GameEntity(mockRouletteBallLander)
+  override val persistenceEntityId: String = "7e595fac-830e-44f1-b73e-f8fd60594ace"
 
 
   "The game entity" should {
@@ -52,16 +56,6 @@ class GameEntitySpec extends WordSpec with Matchers with BeforeAndAfterAll with 
       outcome.sideEffects should contain theSameElementsInOrderAs Seq(Reply(Done), Reply(Done), Reply(Done))
     }
   }
-
-  private def withDriver[T](block: PersistentEntityTestDriver[GameCommand, GameEvent, Option[GameState]] => T): T = {
-    val driver = new PersistentEntityTestDriver(system, new GameEntity(mockRouletteBallLander), GameId)
-    try {
-      block(driver)
-    } finally {
-      driver.getAllIssues shouldBe empty
-    }
-  }
-
 
   protected override def afterAll: Unit = TestKit.shutdownActorSystem(system)
 }

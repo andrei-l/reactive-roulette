@@ -5,18 +5,21 @@ import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import com.github.al.roulette.player.PlayerSerializerRegistry
 import com.github.al.roulette.player.impl.PlayerAccessTokenValidator.isValidAccessToken
+import com.github.al.roulette.test.persistence.PlayerEntitySpecSugar
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
-import com.lightbend.lagom.scaladsl.testkit.PersistentEntityTestDriver
 import com.lightbend.lagom.scaladsl.testkit.PersistentEntityTestDriver.Reply
 import org.scalatest.{BeforeAndAfterAll, Matchers, OptionValues, WordSpec}
 
-class PlayerEntitySpec extends WordSpec with Matchers with BeforeAndAfterAll with OptionValues {
+class PlayerEntitySpec extends WordSpec with Matchers with BeforeAndAfterAll with OptionValues with PlayerEntitySpecSugar {
+  override type P = PlayerEntity
 
-  private final val PlayerId = "0a55e9c8-01e6-4c9c-b5c5-96f304dd0d0a"
   private final val PlayerName = "Some player"
   private final val SamplePlayerState = PlayerState(PlayerName)
 
-  private val system = ActorSystem("test", JsonSerializerRegistry.actorSystemSetupFor(PlayerSerializerRegistry))
+  override final val persistenceEntity = new PlayerEntity
+  override final val persistenceEntityId = "0a55e9c8-01e6-4c9c-b5c5-96f304dd0d0a"
+
+  private implicit val system = ActorSystem("test", JsonSerializerRegistry.actorSystemSetupFor(PlayerSerializerRegistry))
 
   "The player entity" should {
     "allow creating a player" in withDriver { driver =>
@@ -37,20 +40,11 @@ class PlayerEntitySpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       val outcome = driver.run(CreatePlayer(SamplePlayerState), IssueAccessToken)
       outcome.events.size should ===(2)
       outcome.events.head should ===(PlayerCreated(SamplePlayerState))
-      outcome.events.tail.head should matchPattern { case AccessTokenIssued(token) if isValidAccessToken(token, PlayerId) => }
-      outcome.state should matchPattern { case Some(PlayerState(playerName, token :: Nil)) if playerName == PlayerName && isValidAccessToken(token, PlayerId) => }
+      outcome.events.tail.head should matchPattern { case AccessTokenIssued(token) if isValidAccessToken(token, persistenceEntityId) => }
+      outcome.state should matchPattern { case Some(PlayerState(playerName, token :: Nil)) if playerName == PlayerName && isValidAccessToken(token, persistenceEntityId) => }
       outcome.sideEffects.size should ===(2)
       outcome.sideEffects.head should ===(Reply(Done))
-      outcome.sideEffects.tail.head should matchPattern { case Reply(token: String) if isValidAccessToken(token, PlayerId) => }
-    }
-  }
-
-  private def withDriver[T](block: PersistentEntityTestDriver[PlayerCommand, PlayerEvent, Option[PlayerState]] => T): T = {
-    val driver = new PersistentEntityTestDriver(system, new PlayerEntity, PlayerId)
-    try {
-      block(driver)
-    } finally {
-      driver.getAllIssues shouldBe empty
+      outcome.sideEffects.tail.head should matchPattern { case Reply(token: String) if isValidAccessToken(token, persistenceEntityId) => }
     }
   }
 
