@@ -3,8 +3,8 @@ package com.github.al.roulette.player.impl
 import akka.Done
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
+import com.github.al.authentication.JwtTokenUtil
 import com.github.al.roulette.player.PlayerSerializerRegistry
-import com.github.al.roulette.player.impl.PlayerAccessTokenValidator.isValidAccessToken
 import com.github.al.roulette.test.persistence.EntitySpecSugar
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
 import com.lightbend.lagom.scaladsl.testkit.PersistentEntityTestDriver.Reply
@@ -47,6 +47,9 @@ class PlayerEntitySpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       outcome.sideEffects.tail.head should matchPattern { case Reply(token: String) if isValidAccessToken(token, persistenceEntityId) => }
     }
   }
+
+  private def isValidAccessToken(token: String, playerId: String) =
+    JwtTokenUtil.extractPayloadField(token, "playerId").contains(playerId)
 
   protected override def afterAll: Unit = TestKit.shutdownActorSystem(system)
 }

@@ -13,7 +13,7 @@ lazy val `reactive-roulette` = (project in file("."))
   .aggregate(`roulette-bet-api`, `roulette-bet-impl`)
   .aggregate(`player-winnings-api`, `player-winnings-impl`)
   .aggregate(`player-api`, `player-impl`)
-  .aggregate(`json-extensions`, `persistence-extensions`, `tests-extensions`)
+  .aggregate(`json-extensions`, `persistence-extensions`, `authentication-extensions`, `tests-extensions`)
   .settings(commonSettings)
   .settings(name := "reactive-roulette")
 
@@ -94,6 +94,7 @@ lazy val `roulette-bet-impl` = (project in file("roulette-bet-impl"))
   )
   .enablePlugins(LagomScala)
   .dependsOn(`persistence-extensions`)
+  .dependsOn(`authentication-extensions`)
   .dependsOn(`roulette-game-api`)
   .dependsOn(`roulette-bet-api`)
   .dependsOn(`player-api`)
@@ -152,6 +153,7 @@ lazy val `player-impl` = (project in file("player-impl"))
   )
   .enablePlugins(LagomScala)
   .dependsOn(`persistence-extensions`)
+  .dependsOn(`authentication-extensions`)
   .dependsOn(`player-api`)
   .dependsOn(`tests-extensions` % "test->test")
 
@@ -169,6 +171,16 @@ lazy val `persistence-extensions` = (project in file("persistence-extensions"))
   .settings(
     libraryDependencies ++= Seq(
       lagomScaladslPersistenceCassandra % Provided
+    )
+  )
+
+lazy val `authentication-extensions` = (project in file("authentication-extensions"))
+  .settings(commonSettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      lagomScaladslApi % Provided,
+      lagomScaladslServer % Provided,
+      jwtPlayJson % Provided
     )
   )
 

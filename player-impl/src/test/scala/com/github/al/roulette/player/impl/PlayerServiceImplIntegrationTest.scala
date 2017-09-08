@@ -3,9 +3,9 @@ package com.github.al.roulette.player.impl
 import java.util.UUID
 
 import akka.stream.scaladsl.Sink
+import com.github.al.authentication.JwtTokenUtil
 import com.github.al.persistence.UUIDConversions
 import com.github.al.roulette.player.api.{Player, PlayerCredentials, PlayerService}
-import com.github.al.roulette.player.impl.PlayerAccessTokenValidator.isValidAccessToken
 import com.github.al.roulette.player.{PlayerComponents, api}
 import com.lightbend.lagom.scaladsl.api.AdditionalConfiguration
 import com.lightbend.lagom.scaladsl.server.{LagomApplication, LocalServiceLocator}
@@ -84,6 +84,8 @@ class PlayerServiceImplIntegrationTest extends AsyncWordSpec with Matchers with 
 
   private def login(player: Player = SamplePlayer) = playerService.login.invoke(PlayerCredentials(player.playerName))
 
-  override protected def afterAll(): Unit = server.stop()
+  private def isValidAccessToken(token: String, playerId: String) =
+    JwtTokenUtil.extractPayloadField(token, "playerId").contains(playerId)
 
+  override protected def afterAll(): Unit = server.stop()
 }
