@@ -13,7 +13,7 @@ lazy val `reactive-roulette` = (project in file("."))
   .aggregate(`roulette-bet-api`, `roulette-bet-impl`)
   .aggregate(`player-winnings-api`, `player-winnings-impl`)
   .aggregate(`player-api`, `player-impl`)
-  .aggregate(`json-extensions`, `persistence-extensions`, `authentication-extensions`, `tests-extensions`)
+  .aggregate(extensions)
   .settings(commonSettings)
   .settings(name := "reactive-roulette")
 
@@ -157,7 +157,14 @@ lazy val `player-impl` = (project in file("player-impl"))
   .dependsOn(`player-api`)
   .dependsOn(`tests-extensions` % "test->test")
 
-lazy val `json-extensions` = (project in file("json-extensions"))
+lazy val extensions = (project in file("extensions"))
+  .aggregate(`json-extensions`)
+  .aggregate(`persistence-extensions`)
+  .aggregate(`authentication-extensions`)
+  .aggregate(`tests-extensions`)
+  .settings(commonSettings)
+
+lazy val `json-extensions` = (project in file("extensions/json-extensions"))
   .settings(commonSettings)
   .settings(
     libraryDependencies ++= Seq(
@@ -166,7 +173,7 @@ lazy val `json-extensions` = (project in file("json-extensions"))
     )
   )
 
-lazy val `persistence-extensions` = (project in file("persistence-extensions"))
+lazy val `persistence-extensions` = (project in file("extensions/persistence-extensions"))
   .settings(commonSettings)
   .settings(
     libraryDependencies ++= Seq(
@@ -174,7 +181,7 @@ lazy val `persistence-extensions` = (project in file("persistence-extensions"))
     )
   )
 
-lazy val `authentication-extensions` = (project in file("authentication-extensions"))
+lazy val `authentication-extensions` = (project in file("extensions/authentication-extensions"))
   .settings(commonSettings)
   .settings(
     libraryDependencies ++= Seq(
@@ -184,7 +191,7 @@ lazy val `authentication-extensions` = (project in file("authentication-extensio
     )
   )
 
-lazy val `tests-extensions` = (project in file("tests-extensions"))
+lazy val `tests-extensions` = (project in file("extensions/tests-extensions"))
   .settings(commonSettings)
   .settings(
     libraryDependencies ++= Seq(
