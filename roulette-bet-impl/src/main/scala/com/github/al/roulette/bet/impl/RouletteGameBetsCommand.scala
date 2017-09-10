@@ -16,12 +16,12 @@ case object StartGameBetting extends RouletteGameBetsCommand with ReplyType[Done
 
 case class PlaceBet(playerId: UUID, bet: Bet) extends RouletteGameBetsCommand with ReplyType[Done]
 
-case object FinishGameBetting extends RouletteGameBetsCommand with ReplyType[Done] {
-  implicit val format: Format[FinishGameBetting.type] = singletonFormat(FinishGameBetting)
-}
-
 object PlaceBet {
   implicit val format: Format[PlaceBet] = Json.format
+}
+
+case object FinishGameBetting extends RouletteGameBetsCommand with ReplyType[Done] {
+  implicit val format: Format[FinishGameBetting.type] = singletonFormat(FinishGameBetting)
 }
 
 
