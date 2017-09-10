@@ -1,9 +1,17 @@
 package com.github.al.roulette.bet.api
 
+import java.util.UUID
+
 import com.github.al.json.JsonFormats._
 import julienrf.json.derived
 import play.api.libs.json.{Format, Json, __}
 
+
+case class PlayerBets(playerId: UUID, bets: List[Bet])
+
+object PlayerBets {
+  implicit val format: Format[PlayerBets] = Json.format
+}
 
 case class Bet(betNumber: Option[Int], betType: BetType, betAmount: BigDecimal)
 
