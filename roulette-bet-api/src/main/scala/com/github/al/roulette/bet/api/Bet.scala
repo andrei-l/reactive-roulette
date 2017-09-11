@@ -29,8 +29,8 @@ case object Odd extends BetType {
   implicit val format: Format[Odd.type] = singletonFormat(Odd)
 }
 
-case object Event extends BetType {
-  implicit val format: Format[Event.type] = singletonFormat(Event)
+case object Even extends BetType {
+  implicit val format: Format[Even.type] = singletonFormat(Even)
 }
 
 object BetType {
