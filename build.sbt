@@ -155,6 +155,33 @@ lazy val `player-impl` = (project in file("player-impl"))
   .dependsOn(`player-api`)
   .dependsOn(`tests-extensions` % "test->test")
 
+
+lazy val `load-test-api` = (project in file("load-test-api"))
+  .settings(commonSettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      lagomScaladslApi,
+      playJsonDerivedCodecs
+    )
+  ).dependsOn(`json-extensions`)
+
+lazy val `load-test-impl` = (project in file("load-test-impl"))
+  .settings(commonSettings)
+  .settings(lagomForkedTestSettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      lagomScaladslTestKit,
+      lagomScaladslKafkaClient,
+      macwire,
+      jwtPlayJson
+    )
+  )
+  .enablePlugins(LagomScala)
+  .dependsOn(`roulette-game-api`)
+  .dependsOn(`roulette-bet-api`)
+  .dependsOn(`player-api`)
+  .dependsOn(`player-winnings-api`)
+
 lazy val extensions = (project in file("extensions"))
   .aggregate(`json-extensions`)
   .aggregate(`persistence-extensions`)
