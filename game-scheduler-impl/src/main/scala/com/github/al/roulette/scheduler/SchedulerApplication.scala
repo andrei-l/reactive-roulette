@@ -45,5 +45,5 @@ class SchedulerApplicationLoader extends LagomApplicationLoader {
   override def loadDevMode(context: LagomApplicationContext) =
     new SchedulerApplication(context) with LagomDevModeComponents
 
-  override def describeService = Some(readDescriptor[GameService])
+  override def describeService = Some(readDescriptor[GameSchedulerService])
 }

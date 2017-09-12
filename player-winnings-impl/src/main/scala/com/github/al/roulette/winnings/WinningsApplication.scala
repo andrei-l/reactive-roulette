@@ -2,7 +2,6 @@ package com.github.al.roulette.winnings
 
 import com.github.al.roulette.bet.api.BetService
 import com.github.al.roulette.game.api.GameService
-import com.github.al.roulette.player.api.PlayerService
 import com.github.al.roulette.winnings.api.WinningsService
 import com.github.al.roulette.winnings.impl.{GameBetsProclamationEventsSubscriber, GameResultEventsSubscriber, WinningsEntity, WinningsServiceImpl}
 import com.lightbend.lagom.scaladsl.broker.kafka.LagomKafkaComponents
@@ -51,5 +50,5 @@ class WinningsApplicationLoader extends LagomApplicationLoader {
   override def loadDevMode(context: LagomApplicationContext) =
     new WinningsApplication(context) with LagomDevModeComponents
 
-  override def describeService = Some(readDescriptor[PlayerService])
+  override def describeService = Some(readDescriptor[WinningsService])
 }

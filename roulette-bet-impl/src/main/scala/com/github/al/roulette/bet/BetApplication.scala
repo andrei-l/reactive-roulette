@@ -3,7 +3,6 @@ package com.github.al.roulette.bet
 import com.github.al.roulette.bet.api.BetService
 import com.github.al.roulette.bet.impl.{BetServiceImpl, GameEventsSubscriber, RouletteGameBetsEntity}
 import com.github.al.roulette.game.api.GameService
-import com.github.al.roulette.player.api.PlayerService
 import com.lightbend.lagom.scaladsl.broker.kafka.LagomKafkaComponents
 import com.lightbend.lagom.scaladsl.client.ServiceClient
 import com.lightbend.lagom.scaladsl.devmode.LagomDevModeComponents
@@ -46,5 +45,5 @@ class BetApplicationLoader extends LagomApplicationLoader {
   override def loadDevMode(context: LagomApplicationContext) =
     new BetApplication(context) with LagomDevModeComponents
 
-  override def describeService = Some(readDescriptor[PlayerService])
+  override def describeService = Some(readDescriptor[BetService])
 }
