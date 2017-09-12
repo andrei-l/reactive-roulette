@@ -27,7 +27,6 @@ trait WinningsComponents extends LagomServerComponents
   override lazy val lagomServer: LagomServer = serverFor[WinningsService](wire[WinningsServiceImpl])
   override lazy val jsonSerializerRegistry = WinningsSerializerRegistry
 
-  lazy val playerService: PlayerService = serviceClient.implement[PlayerService]
   lazy val gameService: GameService = serviceClient.implement[GameService]
   lazy val betService: BetService = serviceClient.implement[BetService]
 
