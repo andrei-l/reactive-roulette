@@ -125,7 +125,6 @@ lazy val `player-winnings-impl` = (project in file("player-winnings-impl"))
   .dependsOn(`player-winnings-api`)
   .dependsOn(`roulette-bet-api`)
   .dependsOn(`roulette-game-api`)
-  .dependsOn(`player-api`)
   .dependsOn(`tests-extensions` % "test->test")
 
 lazy val `player-api` = (project in file("player-api"))
