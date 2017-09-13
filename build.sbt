@@ -173,6 +173,7 @@ lazy val `load-test-impl` = (project in file("load-test-impl"))
     libraryDependencies ++= Seq(
       lagomScaladslTestKit,
       lagomScaladslKafkaClient,
+      lagomScaladslPubSub,
       macwire,
       jwtPlayJson
     )
