@@ -1,7 +1,7 @@
 import Dependencies.{scalaTest, _}
 import sbt.Keys._
 
-lagomCassandraCleanOnStart in ThisBuild := false
+lagomCassandraCleanOnStart in ThisBuild := true
 lagomKafkaEnabled in ThisBuild := true
 
 scalaVersion in ThisBuild := "2.11.8"
