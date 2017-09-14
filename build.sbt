@@ -181,7 +181,6 @@ lazy val `load-test-impl` = (project in file("load-test-impl"))
   .dependsOn(`roulette-bet-api`)
   .dependsOn(`player-api`)
   .dependsOn(`player-winnings-api`)
-  .dependsOn(`authentication-extensions`)
 
 lazy val extensions = (project in file("extensions"))
   .aggregate(`json-extensions`)
