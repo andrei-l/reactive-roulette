@@ -89,8 +89,7 @@ lazy val `roulette-bet-impl` = (project in file("roulette-bet-impl"))
       lagomScaladslTestKit,
       lagomScaladslKafkaBroker,
       datastaxCassandraDriverExtras,
-      macwire,
-      jwtPlayJson
+      macwire
     )
   )
   .enablePlugins(LagomScala)
@@ -146,8 +145,7 @@ lazy val `player-impl` = (project in file("player-impl"))
       lagomScaladslTestKit,
       lagomScaladslKafkaBroker,
       datastaxCassandraDriverExtras,
-      macwire,
-      jwtPlayJson
+      macwire
     )
   )
   .enablePlugins(LagomScala)
@@ -174,8 +172,7 @@ lazy val `load-test-impl` = (project in file("load-test-impl"))
       lagomScaladslTestKit,
       lagomScaladslKafkaClient,
       lagomScaladslPubSub,
-      macwire,
-      jwtPlayJson
+      macwire
     )
   )
   .enablePlugins(LagomScala)
@@ -184,6 +181,7 @@ lazy val `load-test-impl` = (project in file("load-test-impl"))
   .dependsOn(`roulette-bet-api`)
   .dependsOn(`player-api`)
   .dependsOn(`player-winnings-api`)
+  .dependsOn(`authentication-extensions`)
 
 lazy val extensions = (project in file("extensions"))
   .aggregate(`json-extensions`)
@@ -215,7 +213,7 @@ lazy val `authentication-extensions` = (project in file("extensions/authenticati
     libraryDependencies ++= Seq(
       lagomScaladslApi % Provided,
       lagomScaladslServer % Provided,
-      jwtPlayJson % Provided
+      jwtPlayJson
     )
   )
 
