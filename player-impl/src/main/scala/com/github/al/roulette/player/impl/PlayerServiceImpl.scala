@@ -42,6 +42,7 @@ class PlayerServiceImpl(override val entityRegistry: PersistentEntityRegistry,
 
   override def playerEvents: Topic[api.PlayerEvent] = TopicProducer.singleStreamWithOffset { offset =>
     entityRegistry.eventStream(PlayerEvent.Tag, offset)
+      .filter(_.event.isInstanceOf[PlayerCreated])
       .mapAsync(1)({
         case EventStreamElement(playerId, PlayerCreated(_), _offset) =>
           Future.successful(api.PlayerRegistered(playerId) -> _offset)
