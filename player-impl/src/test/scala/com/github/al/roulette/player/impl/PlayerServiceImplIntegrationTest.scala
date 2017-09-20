@@ -5,27 +5,22 @@ import java.util.UUID
 import akka.stream.scaladsl.Sink
 import com.github.al.authentication.JwtTokenUtil
 import com.github.al.persistence.UUIDConversions
-import com.github.al.roulette.player.api.{Player, PlayerCredentials, PlayerService}
+import com.github.al.roulette.player.api.{Player, PlayerAccessToken, PlayerCredentials, PlayerService}
 import com.github.al.roulette.player.{PlayerComponents, api}
-import com.lightbend.lagom.scaladsl.api.AdditionalConfiguration
 import com.lightbend.lagom.scaladsl.server.{LagomApplication, LocalServiceLocator}
 import com.lightbend.lagom.scaladsl.testkit.{ServiceTest, TestTopicComponents}
-import org.scalatest.{AsyncWordSpec, BeforeAndAfterAll, Matchers}
-import play.api.Configuration
+import org.scalatest._
 import play.api.libs.ws.ahc.AhcWSComponents
 
 import scala.collection.immutable.Seq
+import scala.concurrent.Future
+import scala.language.postfixOps
 
 class PlayerServiceImplIntegrationTest extends AsyncWordSpec with Matchers with BeforeAndAfterAll with UUIDConversions {
   private final val SamplePlayer = Player("some name")
 
   private val server = ServiceTest.startServer(ServiceTest.defaultSetup.withCassandra(true)) { ctx =>
-    new LagomApplication(ctx) with PlayerComponents with LocalServiceLocator with AhcWSComponents with TestTopicComponents {
-      override def additionalConfiguration: AdditionalConfiguration =
-        super.additionalConfiguration ++ Configuration.from(Map(
-          "cassandra-query-journal.eventual-consistency-delay" -> "0"
-        ))
-    }
+    new LagomApplication(ctx) with PlayerComponents with LocalServiceLocator with AhcWSComponents with TestTopicComponents
   }
 
   private val playerService = server.serviceClient.implement[PlayerService]
@@ -60,20 +55,23 @@ class PlayerServiceImplIntegrationTest extends AsyncWordSpec with Matchers with 
     "login user by providing access token" in {
       import server.materializer
 
-      val samplePlayer2 = Player("some new name")
+      val a = (0 to 100 par) map { i =>
+        val newPlayer = Player(s"some new name # $i")
 
-      for {
-        createdPlayerId <- createPlayer(samplePlayer2)
-        events: Seq[api.PlayerEvent] <- playerService.playerEvents.subscribe.atMostOnceSource
-          .filter(_.playerId == createdPlayerId.playerId)
-          .take(1)
-          .runWith(Sink.seq)
-        playerAccessToken <- login(samplePlayer2)
-        if isValidAccessToken(playerAccessToken.token, createdPlayerId.playerId)
-      } yield {
-        events.size shouldBe 1
-        events.head shouldBe an[api.PlayerRegistered]
+        for {
+          createdPlayerId <- createPlayer(newPlayer)
+          events: Seq[api.PlayerEvent] <- playerService.playerEvents.subscribe.atMostOnceSource
+            .filter(_.playerId == createdPlayerId.playerId)
+            .take(1)
+            .runWith(Sink.seq)
+          playerAccessToken <- login(newPlayer)
+        } yield {
+          events.size shouldBe 1
+          events.head shouldBe an[api.PlayerRegistered]
+          playerAccessToken should matchPattern { case PlayerAccessToken(token) if isValidAccessToken(token, createdPlayerId.playerId) => }
+        }
       }
+      a.fold[Future[Assertion]](Future.successful(Succeeded))({ case (f1, f2) => f1.flatMap(_ => f2) })
     }
   }
 

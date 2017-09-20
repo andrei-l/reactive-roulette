@@ -3,7 +3,8 @@ package com.github.al.roulette.player.impl
 import java.util.UUID
 
 import akka.NotUsed
-import com.github.al.persistence.PersistentEntityRegistrySugar
+import akka.actor.Scheduler
+import com.github.al.persistence.{PersistentEntityRegistrySugar, Retrying}
 import com.github.al.roulette.player.api
 import com.github.al.roulette.player.api._
 import com.lightbend.lagom.scaladsl.api.ServiceCall
@@ -12,12 +13,15 @@ import com.lightbend.lagom.scaladsl.api.transport.NotFound
 import com.lightbend.lagom.scaladsl.broker.TopicProducer
 import com.lightbend.lagom.scaladsl.persistence.{EventStreamElement, PersistentEntityRegistry}
 
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
+import scala.language.postfixOps
 
-class PlayerServiceImpl(override val entityRegistry: PersistentEntityRegistry,
-                        playerRepository: PlayerRepository)(implicit val executionContext: ExecutionContext)
+class PlayerServiceImpl(override val entityRegistry: PersistentEntityRegistry, playerRepository: PlayerRepository)
+                       (implicit val executionContext: ExecutionContext, scheduler: Scheduler)
   extends PlayerService
-    with PersistentEntityRegistrySugar {
+    with PersistentEntityRegistrySugar
+    with Retrying {
 
   override def registerPlayer: ServiceCall[Player, PlayerId] = ServiceCall { player =>
     val id = UUID.randomUUID()
@@ -28,7 +32,7 @@ class PlayerServiceImpl(override val entityRegistry: PersistentEntityRegistry,
 
   override def login: ServiceCall[PlayerCredentials, PlayerAccessToken] = ServiceCall { credentials =>
     for {
-      playerId <- playerRepository.getPlayerIdByName(credentials.playerName)
+      playerId <- retry(playerRepository.getPlayerIdByName(credentials.playerName), delay = 300 millis, timeout = 3 seconds)
       accessToken <- entityRef[PlayerEntity](playerId).ask(IssueAccessToken)
     } yield PlayerAccessToken(accessToken)
   }

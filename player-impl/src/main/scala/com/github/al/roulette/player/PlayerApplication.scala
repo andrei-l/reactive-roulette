@@ -1,5 +1,6 @@
 package com.github.al.roulette.player
 
+import akka.actor.Scheduler
 import com.github.al.roulette.player.api.PlayerService
 import com.github.al.roulette.player.impl.{PlayerEntity, PlayerEventReadSideProcessor, PlayerRepository, PlayerServiceImpl}
 import com.lightbend.lagom.scaladsl.broker.kafka.LagomKafkaComponents
@@ -20,6 +21,8 @@ trait PlayerComponents extends LagomServerComponents
   implicit def executionContext: ExecutionContext
 
   implicit def serviceClient: ServiceClient
+
+  implicit def scheduler: Scheduler = actorSystem.scheduler
 
   override lazy val lagomServer: LagomServer = serverFor[PlayerService](wire[PlayerServiceImpl])
   override lazy val jsonSerializerRegistry = PlayerSerializerRegistry
