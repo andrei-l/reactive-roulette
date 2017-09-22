@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<meta charset="utf-8"/>
+<title>WebSocket LoadTest</title>
+<script src='echo.js' charset="UTF-8"></script>
+
+
+<h2>WebSocket LoadTest</h2>
+
+<div id="echo-config" style="float: left;">
+    <strong>Location:</strong><br>
+    <input class="draw-border" id="wsUri" size="35" value="ws://localhost:9000/load-test/start">
+    <br>
+    <button class="echo-button" id="connect">Connect</button>
+    <button class="echo-button" id="disconnect">Disconnect</button>
+    <br>
+    <br>
+    <strong>Message:</strong><br>
+    <textarea class="draw-border" id="sendMessage" style="width: 432px; height: 246px" ></textarea>
+    <br>
+    <button class="echo-button" id="send" class="wsButton">Send</button>
+</div>
+<div id="echo-log" style="float: left; margin-left: 20px; padding-left: 20px; width: 350px; border-left: solid 1px #cccccc;">
+    <strong>Log:</strong>
+    <div id="consoleLog"></div>
+    <button class="echo-button" id="clearLogBut" style="position: relative; top: 3px;">Clear log</button>
+</div>
+</div>

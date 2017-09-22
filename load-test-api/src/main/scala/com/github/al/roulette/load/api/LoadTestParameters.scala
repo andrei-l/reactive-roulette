@@ -4,7 +4,7 @@ import play.api.libs.json.{Format, Json}
 
 case class LoadTestParameters(numberOfConcurrentGames: Int,
                               numberOfPlayers: Int,
-                              numberOfGamesToPlay: Int)
+                              numberOfBetsToPlace: Int)
 
 object LoadTestParameters {
   implicit val format: Format[LoadTestParameters] = Json.format

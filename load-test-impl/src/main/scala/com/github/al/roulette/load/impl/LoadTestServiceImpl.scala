@@ -2,6 +2,7 @@ package com.github.al.roulette.load.impl
 
 import java.time.Duration
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
 
 import akka.NotUsed
 import akka.actor.Scheduler
@@ -33,6 +34,8 @@ class LoadTestServiceImpl(gameService: GameService,
   private lazy val loadTestEventsTopic = pubSubRegistry.refFor(TopicId[LoadTestEvent])
   private lazy val throttlingAccumulator = ThrottlingAccumulator(scheduler, publishEvent)
 
+  private final val PlayersCounter = new AtomicInteger(0)
+  private final val GamesCounter = new AtomicInteger(0)
 
   override def startLoadTest: ServiceCall[LoadTestParameters, Source[String, NotUsed]] = {
     ServiceCall { parameters =>
@@ -43,42 +46,43 @@ class LoadTestServiceImpl(gameService: GameService,
 
   private def startLoadTest(parameters: LoadTestParameters): Unit = {
     loadTestEventsTopic.publish(LoadTestEvent(s"Load test started for next parameters: $parameters"))
-    val playerIdsFuturesSequence = 1 to parameters.numberOfPlayers map (playerName => s"$playerName" -> playerService.registerPlayer.invoke(Player(s"$playerName")))
 
-    scheduler.scheduleOnce(10 seconds) {
-      val playerIdToAccessTokenSequenceOfFutureTries = for {
-        (playerName, playerIdFuture) <- playerIdsFuturesSequence
-        accessTokenFuture = playerService.login.invoke(PlayerCredentials(playerName))
-        playerIdToAccessToken = for {playerId <- playerIdFuture; accessToken <- accessTokenFuture} yield playerId -> accessToken
-      } yield playerIdToAccessToken.toFutureTry
-
-      val playerIdToAccessTokenFutureTriesSequence = Future.sequence(playerIdToAccessTokenSequenceOfFutureTries)
-      val playerIdToAccessTokenFutureSequence = playerIdToAccessTokenFutureTriesSequence.getSuccessfulFutures(publishEvent("Successfully created and logged in a user"))
-      playerIdToAccessTokenFutureTriesSequence.forAllFailureFutures(msg => enqueueMsg(s"Failed to create and login a user:$msg"))
-
-      val gameIdsSequenceOfFutureTries = for {
-        gameName <- 1 to parameters.numberOfConcurrentGames
-        gameIdFuture = gameService.createGame.invoke(Game(s"$gameName", GameDefaultDuration))
-      } yield gameIdFuture.toFutureTry
-      val gameIdsFutureTriesSequence = Future.sequence(gameIdsSequenceOfFutureTries)
-      val gameIdsFutureSequence = gameIdsFutureTriesSequence.getSuccessfulFutures(publishEvent("Successfully created a game"))
-      gameIdsFutureTriesSequence.forAllFailureFutures(msg => enqueueMsg(s"Failed to create a game:$msg"))
-
-
-      val betsFuture = for {
-        gameIdsSequence <- gameIdsFutureSequence
-        playerIdsToAccessTokensSequence <- playerIdToAccessTokenFutureSequence
-        bets <- placeBets(gameIdsSequence, playerIdsToAccessTokensSequence, parameters.numberOfConcurrentGames)
-      } yield bets
-
-      val betsSequence = betsFuture.getSuccessfulFutures(publishEvent("Bet has been successfully put"))
-      betsFuture.forAllFailureFutures(msg => enqueueMsg(s"Failed to put a bet:$msg"))
+    val playerIdsFuturesSequence = PlayersCounter.get() until PlayersCounter.addAndGet(parameters.numberOfPlayers) map {
+      playerName => s"$playerName" -> playerService.registerPlayer.invoke(Player(s"$playerName"))
     }
+
+    val playerIdToAccessTokenSequenceOfFutureTries = for {
+      (playerName, playerIdFuture) <- playerIdsFuturesSequence
+      accessTokenFuture = playerService.login.invoke(PlayerCredentials(playerName))
+      playerIdToAccessToken = for {playerId <- playerIdFuture; accessToken <- accessTokenFuture} yield playerId -> accessToken
+    } yield playerIdToAccessToken.toFutureTry
+
+    val playerIdToAccessTokenFutureTriesSequence = Future.sequence(playerIdToAccessTokenSequenceOfFutureTries)
+    val playerIdToAccessTokenFutureSequence = playerIdToAccessTokenFutureTriesSequence.getSuccessfulFutures(enqueueMsg("Successfully created and logged in a user"))
+    playerIdToAccessTokenFutureTriesSequence.forAllFailureFutures(msg => enqueueMsg(s"Failed to create and login a user:$msg"))
+
+    val gameIdsSequenceOfFutureTries = for {
+      gameName <- GamesCounter.get() until GamesCounter.addAndGet(parameters.numberOfConcurrentGames)
+      gameIdFuture = gameService.createGame.invoke(Game(s"$gameName", GameDefaultDuration))
+    } yield gameIdFuture.toFutureTry
+    val gameIdsFutureTriesSequence = Future.sequence(gameIdsSequenceOfFutureTries)
+    val gameIdsFutureSequence = gameIdsFutureTriesSequence.getSuccessfulFutures(enqueueMsg("Successfully created a game"))
+    gameIdsFutureTriesSequence.forAllFailureFutures(msg => enqueueMsg(s"Failed to create a game:$msg"))
+
+
+    val betsFuture = for {
+      gameIdsSequence <- gameIdsFutureSequence
+      playerIdsToAccessTokensSequence <- playerIdToAccessTokenFutureSequence
+      bets <- placeBets(gameIdsSequence, playerIdsToAccessTokensSequence, parameters.numberOfBetsToPlace)
+    } yield bets
+
+    val betsSequence = betsFuture.getSuccessfulFutures(publishEvent("Bet has been successfully put"))
+    betsFuture.forAllFailureFutures(msg => enqueueMsg(s"Failed to put a bet:$msg"))
   }
 
   private def placeBets(gameIds: Seq[GameId], playerIdsToAccessTokens: Seq[(PlayerId, PlayerAccessToken)], numberOfBets: Int): Future[IndexedSeq[Try[NotUsed]]] = {
     val bets = for {
-      _ <- 0 to numberOfBets
+      _ <- 0 to Random.nextInt(numberOfBets)
       gameId = gameIds(Random.nextInt(gameIds.length))
       (playerId, accessToken) = playerIdsToAccessTokens(Random.nextInt(playerIdsToAccessTokens.length))
       bet = placeBet(gameId.gameId, playerId.playerId, accessToken.token)
@@ -105,10 +109,7 @@ class LoadTestServiceImpl(gameService: GameService,
 
   private def enqueueMsg(msg: String) = throttlingAccumulator.enqueue(msg)
 
-  private def publishEvent(s: String): Unit = {
-    println(s)
-    loadTestEventsTopic.publish(LoadTestEvent(s))
-  }
+  private def publishEvent(s: String): Unit = loadTestEventsTopic.publish(LoadTestEvent(s))
 
   private implicit def stringToUUID(s: String): UUID = UUID.fromString(s)
 
