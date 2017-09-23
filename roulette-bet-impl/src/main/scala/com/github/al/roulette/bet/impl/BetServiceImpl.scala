@@ -4,6 +4,7 @@ import java.util.UUID
 
 import akka.NotUsed
 import com.github.al.authentication.AuthenticatedServerServiceCall.authenticated
+import com.github.al.servicecall.LoggedServerServiceCall.logged
 import com.github.al.persistence.PersistentEntityRegistrySugar
 import com.github.al.roulette.bet.api
 import com.github.al.roulette.bet.api._
@@ -20,13 +21,16 @@ class BetServiceImpl(override val entityRegistry: PersistentEntityRegistry)(impl
   extends BetService
     with PersistentEntityRegistrySugar {
 
-  override def placeBet(gameId: UUID): ServiceCall[Bet, NotUsed] = authenticated { userId =>
-    ServerServiceCall { bet =>
-      entityRef[RouletteGameBetsEntity](gameId)
-        .ask(PlaceBet(userId, bet))
-        .map(_ => NotUsed)
+  override def placeBet(gameId: UUID): ServiceCall[Bet, NotUsed] =
+    authenticated { userId =>
+      logged {
+        ServerServiceCall { bet =>
+          entityRef[RouletteGameBetsEntity](gameId)
+            .ask(PlaceBet(userId, bet))
+            .map(_ => NotUsed)
+        }
+      }
     }
-  }
 
   override def rouletteBetsEvents: Topic[RouletteBetsEvent] = TopicProducer.singleStreamWithOffset { offset =>
     entityRegistry.eventStream(RouletteGameBetsEvent.Tag, offset)

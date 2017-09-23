@@ -41,6 +41,7 @@ lazy val `roulette-game-impl` = (project in file("roulette-game-impl"))
   )
   .enablePlugins(LagomScala)
   .dependsOn(`persistence-extensions`)
+  .dependsOn(`service-call-extensions`)
   .dependsOn(`roulette-game-api`)
   .dependsOn(`game-scheduler-api`)
   .dependsOn(`tests-extensions` % "test->test")
@@ -122,6 +123,7 @@ lazy val `player-winnings-impl` = (project in file("player-winnings-impl"))
   )
   .enablePlugins(LagomScala)
   .dependsOn(`persistence-extensions`)
+  .dependsOn(`service-call-extensions`)
   .dependsOn(`player-winnings-api`)
   .dependsOn(`roulette-bet-api`)
   .dependsOn(`roulette-game-api`)
@@ -150,6 +152,7 @@ lazy val `player-impl` = (project in file("player-impl"))
   )
   .enablePlugins(LagomScala)
   .dependsOn(`persistence-extensions`)
+  .dependsOn(`service-call-extensions`)
   .dependsOn(`authentication-extensions`)
   .dependsOn(`player-api`)
   .dependsOn(`tests-extensions` % "test->test")
@@ -185,6 +188,7 @@ lazy val `load-test-impl` = (project in file("load-test-impl"))
 lazy val extensions = (project in file("extensions"))
   .aggregate(`json-extensions`)
   .aggregate(`persistence-extensions`)
+  .aggregate(`service-call-extensions`)
   .aggregate(`authentication-extensions`)
   .aggregate(`tests-extensions`)
   .settings(commonSettings)
@@ -210,9 +214,17 @@ lazy val `authentication-extensions` = (project in file("extensions/authenticati
   .settings(commonSettings)
   .settings(
     libraryDependencies ++= Seq(
-      lagomScaladslApi % Provided,
-      lagomScaladslServer % Provided,
       jwtPlayJson
+    )
+  ).dependsOn(`service-call-extensions`)
+
+lazy val `service-call-extensions` = (project in file("extensions/service-call-extensions"))
+  .settings(commonSettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      lagomScaladslApi,
+      lagomScaladslServer,
+      scalaLogging
     )
   )
 

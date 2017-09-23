@@ -5,6 +5,7 @@ import java.util.UUID
 import akka.NotUsed
 import akka.persistence.query.Offset
 import com.github.al.persistence.PersistentEntityRegistrySugar
+import com.github.al.servicecall.LoggedServerServiceCall.logged
 import com.github.al.roulette.game.api
 import com.github.al.roulette.game.api.{Game, GameId, GameService}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
@@ -12,24 +13,31 @@ import com.lightbend.lagom.scaladsl.api.broker.Topic
 import com.lightbend.lagom.scaladsl.api.transport.NotFound
 import com.lightbend.lagom.scaladsl.broker.TopicProducer
 import com.lightbend.lagom.scaladsl.persistence.{EventStreamElement, PersistentEntityRegistry}
+import com.lightbend.lagom.scaladsl.server.ServerServiceCall
+import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.implicitConversions
 
 class GameServiceImpl(override val entityRegistry: PersistentEntityRegistry)(implicit ec: ExecutionContext)
   extends GameService
-    with PersistentEntityRegistrySugar {
-  override def createGame: ServiceCall[Game, GameId] = ServiceCall { game =>
-    val id = UUID.randomUUID()
-    entityRef[GameEntity](id)
-      .ask(CreateGame(GameState(game.gameName, game.gameDuration)))
-      .map(_ => GameId(id))
+    with PersistentEntityRegistrySugar
+    with LazyLogging {
+  override def createGame: ServiceCall[Game, GameId] = logged {
+    ServerServiceCall { game =>
+      val id = UUID.randomUUID()
+      entityRef[GameEntity](id)
+        .ask(CreateGame(GameState(game.gameName, game.gameDuration)))
+        .map(_ => GameId(id))
+    }
   }
 
-  override def getGame(id: UUID): ServiceCall[NotUsed, Game] = ServiceCall { _ =>
-    entityRef[GameEntity](id).ask(GetGame).map {
-      case Some(gameState) => Game(gameState.gameName, gameState.gameDuration)
-      case None => throw NotFound(s"Game $id not found");
+  override def getGame(id: UUID): ServiceCall[NotUsed, Game] = logged {
+    ServerServiceCall { _ =>
+      entityRef[GameEntity](id).ask(GetGame).map {
+        case Some(gameState) => Game(gameState.gameName, gameState.gameDuration)
+        case None => throw NotFound(s"Game $id not found");
+      }
     }
   }
 
@@ -40,7 +48,7 @@ class GameServiceImpl(override val entityRegistry: PersistentEntityRegistry)(imp
           case _: GameCreated | _: GameStarted.type | _: GameFinished.type => true
           case _ => false
         }
-      }.mapAsync(1)(convertGameEventsToApiEvent)
+      }.map(logGameEvent).mapAsync(1)(convertGameEventsToApiEvent)
   }
 
   override def gameResultEvents: Topic[api.GameResulted] = TopicProducer.singleStreamWithOffset { offset =>
@@ -50,7 +58,12 @@ class GameServiceImpl(override val entityRegistry: PersistentEntityRegistry)(imp
           case _: GameResulted => true
           case _ => false
         }
-      }.mapAsync(1)(convertGameResultEventsToGameResultApiEvent)
+      }.map(logGameEvent).mapAsync(1)(convertGameResultEventsToGameResultApiEvent)
+  }
+
+  private def logGameEvent[T <: EventStreamElement[GameEvent]](eventElement: T): T = {
+    logger.info(s"Triggered ${eventElement.event} for game ${eventElement.entityId}")
+    eventElement
   }
 
   private def convertGameEventsToApiEvent: EventStreamElement[GameEvent] => Future[(api.GameEvent, Offset)] = {

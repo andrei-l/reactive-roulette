@@ -9,4 +9,5 @@ object Dependencies {
   lazy val datastaxCassandraDriverExtras: ModuleID = "com.datastax.cassandra" % "cassandra-driver-extras" % "3.0.0"
   lazy val playJsonDerivedCodecs: ModuleID = "org.julienrf" %% "play-json-derived-codecs" % "3.3"
   lazy val jwtPlayJson: ModuleID = "com.pauldijou" %% "jwt-play-json" % "0.14.0"
+  lazy val scalaLogging: ModuleID = "com.typesafe.scala-logging" %% "scala-logging" % "3.7.2"
 }
