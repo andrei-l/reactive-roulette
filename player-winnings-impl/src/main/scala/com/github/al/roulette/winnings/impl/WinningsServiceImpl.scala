@@ -1,5 +1,6 @@
 package com.github.al.roulette.winnings.impl
 
+import com.github.al.logging.EventStreamLogging
 import com.github.al.persistence.UUIDConversions
 import com.github.al.roulette.winnings.api
 import com.github.al.roulette.winnings.api.WinningsService
@@ -12,18 +13,16 @@ import scala.concurrent.Future
 
 class WinningsServiceImpl(entityRegistry: PersistentEntityRegistry)
   extends WinningsService
-    with UUIDConversions with LazyLogging {
+    with UUIDConversions
+    with EventStreamLogging
+    with LazyLogging {
 
   override def winningsEvents: Topic[api.WinningsEvent] = TopicProducer.singleStreamWithOffset { offset =>
     entityRegistry.eventStream(WinningsEvent.Tag, offset)
-      .filter(_.event.isInstanceOf[WinningsCalculated]).map(logWinningsEvent).mapAsync(1) {
+      .filter(_.event.isInstanceOf[WinningsCalculated]).mapAsync(1)(logEventStreamElementAsync).mapAsync(1) {
       case EventStreamElement(gameId, WinningsCalculated(playerWinnings), _offset) =>
         Future.successful(api.WinningsCalculated(gameId, playerWinnings) -> _offset)
     }
-  }
-  private def logWinningsEvent[T <: EventStreamElement[WinningsEvent]](eventElement: T): T = {
-    logger.info(s"Triggered ${eventElement.event} for game ${eventElement.entityId}")
-    eventElement
   }
 
 }

@@ -5,9 +5,11 @@ import java.util.UUID
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Flow
+import com.github.al.logging.EventLogging
 import com.github.al.roulette.game.api.{GameCreated, GameEvent, GameService}
 import com.github.al.roulette.scheduler.api.{GameFinished, GameStarted, ScheduledGameEvent}
 import com.lightbend.lagom.scaladsl.pubsub.{PubSubRegistry, TopicId}
+import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.duration.{DurationDouble, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
@@ -16,10 +18,12 @@ import scala.language.postfixOps
 
 class GameScheduler(gameService: GameService,
                     system: ActorSystem,
-                    pubSub: PubSubRegistry)(implicit ec: ExecutionContext) {
+                    pubSub: PubSubRegistry)(implicit ec: ExecutionContext)
+  extends EventLogging
+    with LazyLogging {
   private val gameSchedulerEventsTopic = pubSub.refFor(TopicId[ScheduledGameEvent])
 
-  gameService.gameEvents.subscribe.atLeastOnce(Flow[GameEvent].mapAsync(1) {
+  gameService.gameEvents.subscribe.atLeastOnce(Flow[GameEvent].mapAsync(1)(logEventAsync).mapAsync(1) {
     case GameCreated(gameId, gameDuration) => runGame(gameId, gameDuration.toMillis millis)
     case _ => Future.successful(Done)
   })

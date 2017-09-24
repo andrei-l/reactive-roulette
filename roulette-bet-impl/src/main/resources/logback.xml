@@ -1,27 +1,26 @@
 <configuration>
 
-    <conversionRule conversionWord="coloredLevel" converterClass="com.lightbend.lagom.internal.logback.ColoredLevel" />
+    <conversionRule conversionWord="coloredLevel" converterClass="com.lightbend.lagom.internal.logback.ColoredLevel"/>
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%coloredLevel %logger{15} - %message%n%xException{10}</pattern>
+            <pattern>%date{"HH:mm:ss.SSS"} %coloredLevel %logger{35} - %msg%n</pattern>
         </encoder>
     </appender>
 
-    <appender name="ASYNCSTDOUT" class="ch.qos.logback.classic.AsyncAppender">
-        <appender-ref ref="STDOUT" />
-    </appender>
+    <logger name="play" level="WARN"/>
+    <logger name="akka" level="WARN"/>
+    <logger name="com.lightbend.lagom" level="INFO"/>
 
-    <logger name="play" level="WARN" />
-    <logger name="akka" level="INFO" />
-    <logger name="com.lightbend.lagom" level="INFO" />
-    <logger name="org.apache.cassandra" level="ERROR" />
-    <logger name="com.datastax.driver" level="ERROR" />
-    <logger name="org.apache.kafka" level="WARN" />
-    <logger name="javax.management" level="WARN" />
+    <logger name="org.apache.cassandra" level="ERROR"/>
+    <logger name="com.datastax.driver" level="ERROR"/>
+    <logger name="com.datastax.driver.core.ControlConnection" level="OFF"/>
+    <logger name="org.apache.kafka" level="WARN"/>
 
-    <root level="WARN">
-        <appender-ref ref="ASYNCSTDOUT" />
+    <logger name="com.github.al.roulette.bet.impl.BetServiceImpl" level="DEBUG" />
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
     </root>
 
 </configuration>

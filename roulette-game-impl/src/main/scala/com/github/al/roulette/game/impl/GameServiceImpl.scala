@@ -4,8 +4,9 @@ import java.util.UUID
 
 import akka.NotUsed
 import akka.persistence.query.Offset
+import com.github.al.logging.EventStreamLogging
+import com.github.al.logging.LoggedServerServiceCall.logged
 import com.github.al.persistence.PersistentEntityRegistrySugar
-import com.github.al.servicecall.LoggedServerServiceCall.logged
 import com.github.al.roulette.game.api
 import com.github.al.roulette.game.api.{Game, GameId, GameService}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
@@ -22,6 +23,7 @@ import scala.language.implicitConversions
 class GameServiceImpl(override val entityRegistry: PersistentEntityRegistry)(implicit ec: ExecutionContext)
   extends GameService
     with PersistentEntityRegistrySugar
+    with EventStreamLogging
     with LazyLogging {
   override def createGame: ServiceCall[Game, GameId] = logged {
     ServerServiceCall { game =>
@@ -48,7 +50,7 @@ class GameServiceImpl(override val entityRegistry: PersistentEntityRegistry)(imp
           case _: GameCreated | _: GameStarted.type | _: GameFinished.type => true
           case _ => false
         }
-      }.map(logGameEvent).mapAsync(1)(convertGameEventsToApiEvent)
+      }.mapAsync(1)(logEventStreamElementAsync).mapAsync(1)(convertGameEventsToApiEvent)
   }
 
   override def gameResultEvents: Topic[api.GameResulted] = TopicProducer.singleStreamWithOffset { offset =>
@@ -58,12 +60,7 @@ class GameServiceImpl(override val entityRegistry: PersistentEntityRegistry)(imp
           case _: GameResulted => true
           case _ => false
         }
-      }.map(logGameEvent).mapAsync(1)(convertGameResultEventsToGameResultApiEvent)
-  }
-
-  private def logGameEvent[T <: EventStreamElement[GameEvent]](eventElement: T): T = {
-    logger.info(s"Triggered ${eventElement.event} for game ${eventElement.entityId}")
-    eventElement
+      }.mapAsync(1)(logEventStreamElementAsync).mapAsync(1)(convertGameResultEventsToGameResultApiEvent)
   }
 
   private def convertGameEventsToApiEvent: EventStreamElement[GameEvent] => Future[(api.GameEvent, Offset)] = {

@@ -19,9 +19,8 @@ import com.github.al.roulette.{bet, game}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.pubsub.{PubSubRegistry, TopicId}
 
-import scala.collection.immutable
 import scala.concurrent.duration.DurationDouble
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.language.{implicitConversions, postfixOps}
 import scala.util.{Random, Try}
 
@@ -61,7 +60,7 @@ class LoadTestServiceImpl(gameService: GameService, betService: BetService,
     val playerIdsWithAccessToken: Future[IndexedSeq[(PlayerId, PlayerAccessToken)]] = loginPlayers(playerIds)
     val gameIds: Future[IndexedSeq[GameId]] = createGames(parameters.numberOfConcurrentGames)
 
-    startPlacingBets(playerIdsWithAccessToken, gameIds, parameters.numberOfBetsToPlace)
+    startPlacingBets(playerIdsWithAccessToken, parameters.numberOfBetsToPlace)
   }
 
   private def loginPlayers(playerIdsFuturesSequence: IndexedSeq[(String, Future[PlayerId])]) = {
@@ -97,22 +96,25 @@ class LoadTestServiceImpl(gameService: GameService, betService: BetService,
   }
 
   private def startPlacingBets(playerIdToAccessTokenFutureSequence: Future[IndexedSeq[(PlayerId, PlayerAccessToken)]],
-                               gameIds: Future[IndexedSeq[GameId]],
                                numberOfBetsToPlace: Int) = {
     val betsFuture = for {
-//      _ <- gameIds
       playerIdsToAccessTokensSequence <- playerIdToAccessTokenFutureSequence
       bets <- placeBets(playerIdsToAccessTokensSequence, numberOfBetsToPlace)
     } yield bets
 
-    val betsSequence = betsFuture.getSuccessfulFutures(publishEvent("Bet has been successfully put"))
     betsFuture.forAllFailureFutures(msg => enqueueMsg(s"Failed to put a bet:$msg"))
+    Await.ready(betsFuture.getSuccessfulFutures(publishEvent("Bet has been successfully put")), 30 seconds)
   }
 
   private def placeBets(playerIdsToAccessTokens: Seq[(PlayerId, PlayerAccessToken)], numberOfBets: Int): Future[IndexedSeq[Try[NotUsed]]] = {
+    def pollForNextNotPlayedGame: UUID = {
+      val gameId = GamesToPlay.poll(15, TimeUnit.SECONDS)
+      if (!FinishedGames.contains(gameId)) gameId else pollForNextNotPlayedGame
+    }
+
     val bets = for {
       _ <- 0 to numberOfBets
-      gameId = GamesToPlay.poll(15, TimeUnit.SECONDS)
+      gameId = pollForNextNotPlayedGame
       (playerId, accessToken) = playerIdsToAccessTokens(Random.nextInt(playerIdsToAccessTokens.length))
       bet = placeBet(gameId, playerId.playerId, accessToken.token)
       if !FinishedGames.contains(gameId)
