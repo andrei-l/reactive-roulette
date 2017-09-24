@@ -5,6 +5,14 @@ import akka.stream.scaladsl.Source
 import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
 
 trait LoadTestService extends Service {
+
+  /*
+    {
+      "numberOfConcurrentGames": 1,
+      "numberOfPlayers": 1,
+      "numberOfBetsToPlace": 1
+    }
+  */
   def startLoadTest: ServiceCall[LoadTestParameters, Source[String, NotUsed]]
 
   final override def descriptor: Descriptor = {
