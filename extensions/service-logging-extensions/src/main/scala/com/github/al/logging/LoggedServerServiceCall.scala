@@ -1,4 +1,4 @@
-package com.github.al.servicecall
+package com.github.al.logging
 
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.typesafe.scalalogging.LazyLogging
