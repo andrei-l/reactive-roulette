@@ -47,6 +47,9 @@ class LoadTestServiceImpl(gameService: GameService, betService: BetService,
 
 
   override def startLoadTest: ServiceCall[LoadTestParameters, Source[String, NotUsed]] = {
+    GamesToPlay.clear()
+    FinishedGames.clear()
+
     ServiceCall { parameters =>
       scheduler.scheduleOnce(1 second)(startLoadTest(parameters))
       Future.successful(loadTestEventsTopic.subscriber.map(_.msg))
@@ -107,18 +110,23 @@ class LoadTestServiceImpl(gameService: GameService, betService: BetService,
   }
 
   private def placeBets(playerIdsToAccessTokens: Seq[(PlayerId, PlayerAccessToken)], numberOfBets: Int): Future[IndexedSeq[Try[NotUsed]]] = {
-    def pollForNextNotPlayedGame: UUID = {
-      val gameId = GamesToPlay.poll(15, TimeUnit.SECONDS)
-      if (!FinishedGames.contains(gameId)) gameId else pollForNextNotPlayedGame
-    }
+    def pollForNextNotPlayedGame: Option[UUID] =
+      Try(GamesToPlay.poll(15, TimeUnit.SECONDS)).toOption match {
+        case option@Some(gameId) => if (!FinishedGames.contains(gameId)) option else pollForNextNotPlayedGame
+        case none => none
+      }
 
     val bets = for {
       _ <- 0 to numberOfBets
-      gameId = pollForNextNotPlayedGame
+      gameIdOption = pollForNextNotPlayedGame
       (playerId, accessToken) = playerIdsToAccessTokens(Random.nextInt(playerIdsToAccessTokens.length))
-      bet = placeBet(gameId, playerId.playerId, accessToken.token)
-      if !FinishedGames.contains(gameId)
-      _ = GamesToPlay.add(gameId)
+      bet = gameIdOption match {
+        case Some(gameId) =>
+          val placeBetResult = placeBet(gameId, playerId.playerId, accessToken.token)
+          if (!FinishedGames.contains(gameId)) GamesToPlay.add(gameId)
+          placeBetResult
+        case None => Future.successful(NotUsed)
+      }
     } yield bet.toFutureTry
 
     Future.sequence(bets)
