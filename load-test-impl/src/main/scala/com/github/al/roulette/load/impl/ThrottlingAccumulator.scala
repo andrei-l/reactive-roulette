@@ -26,19 +26,15 @@ private[impl] case class ThrottlingAccumulator(scheduler: Scheduler, flush: Stri
   private def flushQueue(): Unit = {
     val drained = new util.ArrayList[String]()
     queue.drainTo(drained)
-    drained.asScala
-      .map(_ -> 1)
-      .sliding(2)
-      .collect {
-        case Seq((a, aN), (b, bN)) if a == b => a -> (aN + bN)
-        case Seq(a, b) => b
-      }
-      .map {
-        case (a, aN) if aN == 1 => a
-        case (a, aN) => s"${aN}x $a"
-      }
-      .foreach(flush)
+    accumulateIdenticalMessages(drained.asScala.toList).foreach(flush)
     scheduled = false
   }
 
+  private[impl] def accumulateIdenticalMessages(messages: List[String]): List[String] =
+    (List(messages.take(1)) /: messages.tail) ((l, r) =>
+      if (l.head.head == r) (r :: l.head) :: l.tail else List(r) :: l
+    ).reverseMap(_.reverse).map {
+      case xs@List(head) => head
+      case xs@head :: _ => s"x${xs.size} $head"
+    }
 }
