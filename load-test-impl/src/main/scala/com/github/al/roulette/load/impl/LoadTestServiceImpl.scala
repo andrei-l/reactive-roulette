@@ -18,6 +18,7 @@ import com.github.al.roulette.winnings.api.WinningsService
 import com.github.al.roulette.{bet, game}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.pubsub.{PubSubRegistry, TopicId}
+import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.duration.DurationDouble
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -28,10 +29,15 @@ class LoadTestServiceImpl(gameService: GameService, betService: BetService,
                           playerService: PlayerService, winningsService: WinningsService,
                           pubSubRegistry: PubSubRegistry, scheduler: Scheduler)
                          (implicit executionContext: ExecutionContext)
-  extends LoadTestService {
+  extends LoadTestService with LazyLogging {
   private final val GameDefaultDuration = Duration.ofSeconds(10)
   private lazy val loadTestEventsTopic = pubSubRegistry.refFor(TopicId[LoadTestEvent])
-  private lazy val throttlingAccumulator = ThrottlingAccumulator(scheduler, publishEvent)
+  private lazy val throttlingAccumulator = ThrottlingAccumulator(scheduler, logMessage)
+
+  private def logMessage: String => Unit = msg => {
+    loadTestEventsTopic.publish(LoadTestEvent(msg))
+    logger.info(msg)
+  }
 
   private final val PlayersCounter = new AtomicInteger(0)
   private final val GamesCounter = new AtomicInteger(0)
@@ -106,7 +112,7 @@ class LoadTestServiceImpl(gameService: GameService, betService: BetService,
     } yield bets
 
     betsFuture.forAllFailureFutures(msg => enqueueMsg(s"Failed to put a bet:$msg"))
-    Await.ready(betsFuture.getSuccessfulFutures(publishEvent("Bet has been successfully put")), 30 seconds)
+    Await.ready(betsFuture.getSuccessfulFutures(enqueueMsg("Bet has been successfully put")), 30 seconds)
   }
 
   private def placeBets(playerIdsToAccessTokens: Seq[(PlayerId, PlayerAccessToken)], numberOfBets: Int): Future[IndexedSeq[Try[NotUsed]]] = {
@@ -148,9 +154,7 @@ class LoadTestServiceImpl(gameService: GameService, betService: BetService,
       .invoke(randomBet)
   }
 
-  private def enqueueMsg(msg: String) = throttlingAccumulator.enqueue(msg)
-
-  private def publishEvent(s: String): Unit = loadTestEventsTopic.publish(LoadTestEvent(s))
+  private def enqueueMsg(msg: String): Unit = throttlingAccumulator.enqueue(msg)
 
   private implicit def stringToUUID(s: String): UUID = UUID.fromString(s)
 

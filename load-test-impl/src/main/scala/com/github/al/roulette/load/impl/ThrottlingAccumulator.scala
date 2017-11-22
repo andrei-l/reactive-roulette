@@ -17,15 +17,28 @@ private[impl] case class ThrottlingAccumulator(scheduler: Scheduler, flush: Stri
 
   def enqueue(msg: String): Unit = {
     queue.add(msg)
-    if (!scheduled) scheduler.scheduleOnce(5 second)(flushQueue())
-
+    if (!scheduled) {
+      scheduled = true
+      scheduler.scheduleOnce(1 second)(flushQueue())
+    }
   }
 
   private def flushQueue(): Unit = {
-    scheduled = true
     val drained = new util.ArrayList[String]()
     queue.drainTo(drained)
-    drained.asScala.foreach(flush)
+    drained.asScala
+      .map(_ -> 1)
+      .sliding(2)
+      .collect {
+        case Seq((a, aN), (b, bN)) if a == b => a -> (aN + bN)
+        case Seq(a, b) => b
+      }
+      .map {
+        case (a, aN) if aN == 1 => a
+        case (a, aN) => s"${aN}x $a"
+      }
+      .foreach(flush)
+    scheduled = false
   }
 
 }
